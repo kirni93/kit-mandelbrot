@@ -25,6 +25,12 @@ wheels = [
 ]
 
 [[package]]
+name = "glcontext"
+version = "3.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3a/80/8238a0e6e972292061176141c1028b5e670aa8c94cf4c2f819bd730d314e/glcontext-3.0.0.tar.gz", hash = "sha256:57168edcd38df2fc0d70c318edf6f7e59091fba1cd3dadb289d0aa50449211ef", size = 16422, upload-time = "2024-08-10T20:01:20.004Z" }
+
+[[package]]
 name = "iniconfig"
 version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -38,8 +44,10 @@ name = "kit-mandelbrot"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "moderngl" },
     { name = "numpy" },
     { name = "plotly" },
+    { name = "pyglet" },
 ]
 
 [package.dev-dependencies]
@@ -51,8 +59,10 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "moderngl", specifier = ">=5.12.0" },
     { name = "numpy", specifier = ">=2.3.4" },
     { name = "plotly", specifier = ">=6.3.1" },
+    { name = "pyglet", specifier = ">=2.1.10" },
 ]
 
 [package.metadata.requires-dev]
@@ -61,6 +71,15 @@ dev = [
     { name = "pydebug", specifier = ">=1.0.3" },
     { name = "pytest", specifier = ">=8.4.2" },
 ]
+
+[[package]]
+name = "moderngl"
+version = "5.12.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "glcontext" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/da/52/540e2f8c45060bb2709f56eb5a44ae828dfcc97ccecb342c1a7deb467889/moderngl-5.12.0.tar.gz", hash = "sha256:52936a98ccb2f2e1d6e3cb18528b2919f6831e7e3f924e788b5873badce5129b", size = 193232, upload-time = "2024-10-17T12:36:28.002Z" }
 
 [[package]]
 name = "narwhals"
@@ -137,6 +156,15 @@ name = "pydebug"
 version = "1.0.3"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/5b/7a/161dfb5bb88e8ee49851e43e1ab0fe5c71a56285cf4bbb82b08035f45f59/pydebug-1.0.3.tar.gz", hash = "sha256:d81094bf93943614acaad413ee0b4fda77d721b81a90856668a41a0ff0e401c1", size = 4330, upload-time = "2013-10-13T14:01:55.978Z" }
+
+[[package]]
+name = "pyglet"
+version = "2.1.10"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/cb/da/42b3e72a90818fe44718615e816157cff28e443bf9c1a863a5c1f091d6c3/pyglet-2.1.10.tar.gz", hash = "sha256:d67ca6075a6dcd87d820a3c31c68b9bbaa5731b4dd92eab380bd0a44cfb7ada0", size = 6594138, upload-time = "2025-11-03T09:49:54.434Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f1/fa/1928df8eac79c5d92f62139c79f19682761dbbac745e3b7831e9d2d76cd0/pyglet-2.1.10-py3-none-any.whl", hash = "sha256:dee753d97b9eb27c4ee4f1118b2142a1d8953d1b2d84589cc37e69973b8593f9", size = 1031913, upload-time = "2025-11-03T09:49:49.945Z" },
+]
 
 [[package]]
 name = "pygments"

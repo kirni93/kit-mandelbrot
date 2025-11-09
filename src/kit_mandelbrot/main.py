@@ -1,216 +1,23 @@
-from typing import Iterator, Optional
-from dataclasses import dataclass
 import numpy as np
 import plotly.express as px
-from math import log
 import pyglet
+from kit_mandelbrot.config import DEBOUNCE_SEC
 from pyglet import shapes
 from pyglet.window import mouse
 import moderngl
-
-ESCPAE_RADIUS: float = 2.0
-ESCPAE_RADIUS2: float = ESCPAE_RADIUS * ESCPAE_RADIUS
-DEBOUNCE_SEC = 0.15
-LN2 = np.log(2.0)
-
-
-@dataclass
-class Viewport:
-    re_min: float
-    re_max: float
-    imag_min: float
-    imag_max: float
-
-    # --- zoom ---------------------------------------------------------------
-    def zoom_viewport_at(self, x_frac: float, y_frac: float, zoom: float) -> None:
-        """
-        Zoom viewport around a fractional screen position (x_frac, y_frac).
-        zoom < 1 => zoom in, zoom > 1 => zoom out. Modifies self in-place.
-        Keeps the mouse position fixed in view.
-        """
-        re_span = self.re_max - self.re_min
-        im_span = self.imag_max - self.imag_min
-
-        # current complex coordinates under cursor
-        re_cursor = self.re_min + x_frac * re_span
-        im_cursor = self.imag_min + y_frac * im_span
-
-        new_re_span = re_span * zoom
-        new_im_span = im_span * zoom
-
-        # place cursor at same fractional position after zoom
-        self.re_min = re_cursor - x_frac * new_re_span
-        self.re_max = self.re_min + new_re_span
-        self.imag_min = im_cursor - y_frac * new_im_span
-        self.imag_max = self.imag_min + new_im_span
-
-    # --- zoom into a box selected on screen ---------------------------------
-    def zoom_box(self, xf0: float, yf0: float, xf1: float, yf1: float) -> None:
-        """
-        Zoom viewport to a box defined by two fractional corners (xf0,yf0) and (xf1,yf1).
-        Fractions are 0..1 in both axes, bottom-left origin.
-        """
-        re_min, re_max = self.re_min, self.re_max
-        im_min, im_max = self.imag_min, self.imag_max
-        re_span = re_max - re_min
-        im_span = im_max - im_min
-
-        # Compute new boundaries in fractal coordinates
-        self.re_min = min(xf0, xf1) * re_span + re_min
-        self.re_max = max(xf0, xf1) * re_span + re_min
-        self.imag_min = min(yf0, yf1) * im_span + im_min
-        self.imag_max = max(yf0, yf1) * im_span + im_min
-
-    # --- panning ------------------------------------------------------------
-    def pan_by_frac(self, dx_frac: float, dy_frac: float) -> None:
-        """
-        Translate the viewport by dx_frac, dy_frac of its span.
-        Positive dx moves right, positive dy moves up (screen coords: bottom-left).
-        """
-        re_span = self.re_max - self.re_min
-        im_span = self.imag_max - self.imag_min
-        self.re_min += dx_frac * re_span
-        self.re_max += dx_frac * re_span
-        self.imag_min += dy_frac * im_span
-        self.imag_max += dy_frac * im_span
-
-    # --- aspect utilities ----------------------------------------------------
-    def get_spans(self):
-        """Return (re_span, im_span)."""
-        return (self.re_max - self.re_min, self.imag_max - self.imag_min)
-
-    def set_imag_span_from_aspect(self, aspect: float) -> None:
-        """
-        Adjust imag_min/max to match a given aspect ratio (width/height).
-        Useful when resetting.
-        """
-        re_span = self.re_max - self.re_min
-        im_span = re_span / aspect
-        im_center = (self.imag_min + self.imag_max) / 2.0
-        self.imag_min = im_center - im_span / 2.0
-        self.imag_max = im_center + im_span / 2.0
-
-
-def z_generator(c: complex) -> Iterator[complex]:
-    """
-    z_0 = 0
-    z_n+1 = z_n^2 + c
-    """
-    z: complex = 0j
-
-    while True:
-        yield z
-        z = z**2 + c
-
-
-def generate_complex_grid(width: int, height: int, vp: Viewport) -> np.ndarray:
-    """Height and Width array of complex numbers for the viewport."""
-    re = np.linspace(start=vp.re_min, stop=vp.re_max, num=width, dtype=np.float64)
-
-    imag = np.linspace(
-        start=vp.imag_min, stop=vp.imag_max, num=height, dtype=np.float64
-    )
-
-    Re, Im = np.meshgrid(re, imag)
-    return Re + 1j * Im
-
-
-def escape_time(
-    c: complex, max_iterations: int, smooth: bool = False
-) -> Optional[float]:
-    for n, z in enumerate(z_generator(c)):
-        z_abs = abs(z)
-
-        if z_abs > ESCPAE_RADIUS:
-            if smooth:
-                return n + 1 - log(log(z_abs)) / log(2)
-            return n
-
-        if n > max_iterations:
-            return None
-
-
-def mandelbrot_stability_vec(
-    c_grid: np.ndarray,
-    max_iterations: int,
-    smooth: bool = False,
-    escape_radius: float = 2.0,
-) -> np.ndarray:
-    """
-    Vectorized Mandelbrot stability:
-    - returns 1.0 for points that never escape within max_iterations
-    - else returns (n / max_iterations) or smooth-normalized if smooth=True
-    """
-    # Ensure complex dtype for math
-    c = c_grid.astype(np.complex128, copy=False)
-
-    # Working arrays
-    z = np.zeros_like(c)
-    escaped = np.zeros(c.shape, dtype=bool)  # which pixels have escaped (ever)
-    n_at_escape = np.zeros(
-        c.shape, dtype=np.float64
-    )  # store n (or smooth n) when they escape
-
-    esc2 = escape_radius * escape_radius
-
-    for n in range(1, max_iterations + 1):
-        # Iterate all (computing everywhere is often faster than masked writes)
-        z = z * z + c
-
-        # Check magnitude^2 to avoid sqrt
-        mag2 = z.real * z.real + z.imag * z.imag
-
-        # Pixels that just escaped this iteration
-        newly = (~escaped) & (mag2 > esc2)
-        if newly.any():
-            if smooth:
-                # Smooth escape time: n + 1 - log(log|z|)/log 2
-                # log|z| = 0.5 * log(|z|^2) => log(log|z|) = log(0.5 * log mag2)
-                # Use safe logs; mag2 > esc2 >= 4, so log is well-defined
-                mu = n + 1.0 - (np.log(np.log(np.sqrt(mag2[newly]))) / LN2)
-                n_at_escape[newly] = mu
-            else:
-                n_at_escape[newly] = n
-
-            escaped[newly] = True
-
-        # Early out if everyone escaped
-        if escaped.all():
-            break
-
-    # Map to stability in [0, 1]:
-    # - points that never escaped → 1.0
-    # - escaped → normalized by max_iterations
-    stability = np.empty(c.shape, dtype=np.float64)
-    stability[~escaped] = 1.0
-    if smooth:
-        # Normalize smooth mu by max_iterations, clamp to [0, 1]
-        s = n_at_escape / max_iterations
-        np.clip(s, 0.0, 1.0, out=s)
-        stability[escaped] = s[escaped]
-    else:
-        stability[escaped] = n_at_escape[escaped] / max_iterations
-
-    return stability
-
-
-def mandelbrot_stability(c_grid: np.ndarray, max_iterations: int) -> np.ndarray:
-    """
-    Return maks to specify if a point in the c_grid is part of the mandelbrot set.
-    """
-    height, width = c_grid.shape
-
-    # fill all with zeroes
-    stability = np.zeros((height, width), dtype=np.float64)
-
-    for y in range(height):
-        for x in range(width):
-            c = complex(c_grid[y, x])
-
-            n = escape_time(c, max_iterations)
-            stability[y, x] = 1.0 if n is None else (n / max_iterations)
-
-    return stability
+from kit_mandelbrot.domain import viewport
+from kit_mandelbrot.domain.viewport import Viewport
+from kit_mandelbrot.services.fractal_engine import (
+    FractalEngine,
+    FractalEngineCPU,
+    generate_complex_grid,
+    mandelbrot_stability_vec,
+)
+from importlib.resources import files
+from kit_mandelbrot.rendering.texture_presenter import TexturePresenter
+from kit_mandelbrot.rendering.quad import FullscreenQuad
+from kit_mandelbrot.rendering.pipeline import RenderPipeline
+from kit_mandelbrot.app_context import AppContext
 
 
 def plot_mandelbrot(
@@ -244,69 +51,6 @@ def plot_mandelbrot(
 def screen_to_fracs(x: int, y: int, width: int, height: int) -> tuple[float, float]:
     """Convert screen px to [0..1] fractions, origin at bottom-left (pyglet)."""
     return (x / max(1, width), y / max(1, height))
-
-
-class HUD:
-    def __init__(self, pos=(10, 10), padding=8):
-        self.batch = pyglet.graphics.Batch()
-        self.pos = pos
-        self.padding = padding
-
-        # Background panel (auto-resized in update)
-        self.bg = shapes.Rectangle(
-            x=pos[0], y=pos[1], width=320, height=110, color=(0, 0, 0), batch=self.batch
-        )
-        self.bg.opacity = 160  # semi-transparent
-
-        # Labels (positions updated in update())
-        self.labels = [
-            pyglet.text.Label(
-                "", x=0, y=0, color=(255, 255, 255, 255), batch=self.batch
-            ),
-            pyglet.text.Label(
-                "", x=0, y=0, color=(200, 200, 200, 255), batch=self.batch
-            ),
-            pyglet.text.Label(
-                "", x=0, y=0, color=(200, 200, 200, 255), batch=self.batch
-            ),
-            pyglet.text.Label(
-                "", x=0, y=0, color=(200, 200, 200, 255), batch=self.batch
-            ),
-            pyglet.text.Label(
-                "", x=0, y=0, color=(200, 200, 200, 255), batch=self.batch
-            ),
-        ]
-
-    def update(self, viewport: Viewport, iterations, size):
-        w, h = size
-        re_span = viewport.re_max - viewport.re_min
-        im_span = viewport.imag_max - viewport.imag_min
-        re_center = (viewport.re_min + viewport.re_max) / 2.0
-        im_center = (viewport.imag_min + viewport.imag_max) / 2.0
-
-        # Update label text
-        self.labels[0].text = "Viewport"
-        self.labels[1].text = f" Center: Re={re_center:.6f}, Im={im_center:.6f}"
-        self.labels[2].text = f" Span:   ΔRe={re_span:.6e}, ΔIm={im_span:.6e}"
-        self.labels[3].text = f" Iter:   {iterations}    Size: {w}×{h}"
-
-        # Layout labels (top-left anchor of panel)
-        x0, y0 = self.pos
-        line_h = 18
-        for i, lbl in enumerate(self.labels):
-            lbl.x = x0 + self.padding
-            lbl.y = y0 + self.padding + i * line_h
-
-        # Resize background to fit text block
-        max_w = max(lbl.content_width for lbl in self.labels) if self.labels else 0
-        total_h = self.padding * 2 + line_h * len(self.labels)
-        self.bg.x = x0
-        self.bg.y = y0
-        self.bg.width = max(200, self.padding * 2 + max_w)
-        self.bg.height = total_h
-
-    def draw(self):
-        self.batch.draw()
 
 
 class MandelbrotApp(pyglet.window.Window):
@@ -395,8 +139,6 @@ class MandelbrotApp(pyglet.window.Window):
 
         self._debounce_scheduled = False
         self.texture = None
-
-        self.hud = HUD(pos=(10, 10))
 
         self.fps_display = pyglet.window.FPSDisplay(window=self)
 
@@ -511,15 +253,6 @@ class MandelbrotApp(pyglet.window.Window):
             self.texture.use(0)
             self.vao.render()
 
-        # Update & draw HUD last
-        self.hud.update(
-            viewport=self.mandelbrot_viewport,
-            iterations=self.max_iterations,
-            size=self.get_size(),
-        )
-        self.hud.draw()
-        # self.fps_display.draw()
-
     def _debounced_recompute(self, dt):
         self._debounce_scheduled = False
         self.recompute_texture()
@@ -538,9 +271,72 @@ class MandelbrotApp(pyglet.window.Window):
             pyglet.clock.schedule_once(self._debounced_recompute, DEBOUNCE_SEC)
 
 
+start_re_min = -2.5
+start_re_max = 1.0
+start_imag_min = -1.5
+start_imag_max = 1.5
+
+
+class MandelbrotWindow(pyglet.window.Window):
+    def __init__(self, width: int = 900, height: int = 600) -> None:
+        super().__init__(
+            width=width, height=height, caption="Mandelbrot Viewer", resizable=True
+        )
+        ctx = moderngl.create_context()
+        ctx.viewport = (0, 0, self.width, self.height)
+
+        vs = (files("kit_mandelbrot.shaders") / "present.vert.glsl").read_text("utf-8")
+        fs = (files("kit_mandelbrot.shaders") / "present.frag.glsl").read_text("utf-8")
+        program = ctx.program(vertex_shader=vs, fragment_shader=fs)
+
+        presenter = TexturePresenter(ctx)
+        presenter.ensure_size((self.width, self.height))  # allocate texture
+
+        engine: FractalEngine = FractalEngineCPU()
+
+        quad = FullscreenQuad(ctx, program)
+        pipeline = RenderPipeline(ctx, program, quad, presenter)
+        vp = Viewport(
+            re_min=start_re_min,
+            re_max=start_re_max,
+            imag_min=start_imag_min,
+            imag_max=start_imag_max,
+        )
+
+        self.app = AppContext(
+            gl_ctx=ctx,
+            presenter=presenter,
+            pipeline=pipeline,
+            engine=engine,
+            viewport=vp,
+        )
+
+        self._recompute_and_upload(w=width, h=height)
+
+    def _recompute_and_upload(self, w: int, h: int) -> None:
+        frame: np.ndarray = self.app.engine.compute(
+            width=w, height=h, viewport=self.app.viewport
+        )
+
+        self.app.presenter.upload(frame)
+
+    def on_draw(self) -> None:
+        self.clear()
+        self.app.gl_ctx.clear(0.07, 0.07, 0.09, 1.0)
+        self.app.pipeline.draw()
+
+    def on_resize(self, width: int, height: int) -> None:
+        super().on_resize(width, height)
+        self.app.gl_ctx.viewport = (0, 0, width, height)
+        self.app.presenter.ensure_size((width, height))
+        self._recompute_and_upload(w=width, h=height)
+
+
 def main():
-    app = MandelbrotApp()
+    app = MandelbrotWindow()
     pyglet.app.run()
+
+    app.close()
 
 
 if __name__ == "__main__":

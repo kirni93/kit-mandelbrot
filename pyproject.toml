@@ -2,6 +2,9 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/kit_mandelbrot"]
+
 [project]
 name = "kit-mandelbrot"
 version = "0.1.0"
@@ -23,4 +26,9 @@ dev = [
     "debugpy>=1.8.17",
     "pydebug>=1.0.3",
     "pytest>=8.4.2",
+]
+
+[tool.hatch.build]
+include = [
+  "src/kit_mandelbrot/shaders/**/*.glsl",
 ]

@@ -1,17 +1,11 @@
 import numpy as np
 import plotly.express as px
 import pyglet
-from kit_mandelbrot.config import DEBOUNCE_SEC
-from pyglet import shapes
-from pyglet.window import mouse
 import moderngl
-from kit_mandelbrot.domain import viewport
 from kit_mandelbrot.domain.viewport import Viewport
 from kit_mandelbrot.services.fractal_engine import (
     FractalEngine,
     FractalEngineCPU,
-    generate_complex_grid,
-    mandelbrot_stability_vec,
 )
 from importlib.resources import files
 from kit_mandelbrot.rendering.texture_presenter import TexturePresenter
@@ -51,12 +45,6 @@ def plot_mandelbrot(
     )
 
     fig.show()
-
-
-# --- helpers: viewport math ---------------------------------------------------
-def screen_to_fracs(x: int, y: int, width: int, height: int) -> tuple[float, float]:
-    """Convert screen px to [0..1] fractions, origin at bottom-left (pyglet)."""
-    return (x / max(1, width), y / max(1, height))
 
 
 start_re_min = -2.5

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from numpy import test
 import pyglet
 from typing import Optional
 from .dependencies import UIDeps

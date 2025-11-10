@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+from numpy import test
 import pyglet
 from typing import Optional
 from .dependencies import UIDeps
 from .types import UIElement
 from pyglet.window import Window
+from pydantic import BaseModel
 
 
-class CursorCoordsOverlayConfig:
+class CursorCoordsOverlayConfig(BaseModel):
     x_pad: int = 12
     y_pad: int = 12
     font_size: int = 12
@@ -22,7 +24,11 @@ class CursorCoordsOverlay(UIElement):
         self._y: int = 0
         self._config = config
 
-        self._label = pyglet.text.Label()
+        # init UI elements with default values, will be overriddedn later
+        self._label = pyglet.text.Label(
+            text="", x=0, y=0, anchor_x="left", anchor_y="bottom"
+        )
+        self._update_config()
 
     def mount(self, window: Window, deps: UIDeps) -> None:
         self._deps = deps
@@ -30,8 +36,17 @@ class CursorCoordsOverlay(UIElement):
     def unmount(self, window: Window) -> None:
         self._deps = None
 
+    def _update_config(self) -> None:
+        self._label.font_size = self._config.font_size
+        self._label.font_name = self._config.font_name
+        self._label.color = self._config.color
+
+    def on_config_changed(self, section: Optional[BaseModel]) -> None:
+        self._update_config()
+
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> None:
-        assert self._deps is not None
+        if self._deps is None:
+            return
 
         self._x = x
         self._y = y
@@ -41,14 +56,12 @@ class CursorCoordsOverlay(UIElement):
         self._label.text = f"z={z}"
 
     def draw(self) -> None:
-        assert self._deps is not None
+        if self._deps is None:
+            return
 
         x = self._x + self._config.x_pad
         y = self._y + self._config.y_pad
 
         self._label.x = int(x)
         self._label.y = int(y)
-        self._label.font_size = self._config.font_size
-        self._label.font_name = self._config.font_name
-        self._label.color = self._config.color
         self._label.draw()

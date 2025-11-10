@@ -16,6 +16,10 @@ class UIManager:
         self.window.push_handlers(element)
         self._elements.append(element)
 
+    def config_changed(self) -> None:
+        for e in self._elements:
+            e.on_config_changed(section=None)
+
     def draw(self) -> None:
         for e in self._elements:
             e.draw()

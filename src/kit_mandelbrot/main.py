@@ -62,7 +62,9 @@ class MandelbrotWindow(pyglet.window.Window):
         ctx.viewport = (0, 0, self.width, self.height)
 
         vs = (files("kit_mandelbrot.shaders") / "present.vert.glsl").read_text("utf-8")
-        fs = (files("kit_mandelbrot.shaders") / "present.frag.glsl").read_text("utf-8")
+        fs = (files("kit_mandelbrot.shaders") / "present_color.frag.glsl").read_text(
+            "utf-8"
+        )
         program = ctx.program(vertex_shader=vs, fragment_shader=fs)
 
         presenter = TexturePresenter(ctx)

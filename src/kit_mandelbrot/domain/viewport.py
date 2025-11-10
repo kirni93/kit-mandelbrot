@@ -8,6 +8,13 @@ class Viewport:
     imag_min: float
     imag_max: float
 
+    def screen_to_complex(self, x: int, y: int, width: int, height: int) -> complex:
+        """Convert screen coordinates to a complex-plane coordinate"""
+        re = self.re_min + (x / width) * (self.re_max - self.re_min)
+        imag = self.imag_max - (y / height) * (self.imag_max - self.imag_min)
+
+        return complex(real=re, imag=imag)
+
     # --- zoom ---------------------------------------------------------------
     def zoom_viewport_at(self, x_frac: float, y_frac: float, zoom: float) -> None:
         """

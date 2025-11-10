@@ -47,10 +47,10 @@ def plot_mandelbrot(
     fig.show()
 
 
-start_re_min = -2.5
-start_re_max = 1.0
-start_imag_min = -1.5
-start_imag_max = 1.5
+START_RE_MIN = -2.5
+START_RE_MAX = 1.0
+START_IMAG_MIN = -1.5
+START_IMAG_MAX = 1.5
 
 
 class MandelbrotWindow(pyglet.window.Window):
@@ -75,10 +75,10 @@ class MandelbrotWindow(pyglet.window.Window):
         quad = FullscreenQuad(ctx, program)
         pipeline = RenderPipeline(ctx, program, quad, presenter)
         vp = Viewport(
-            re_min=start_re_min,
-            re_max=start_re_max,
-            imag_min=start_imag_min,
-            imag_max=start_imag_max,
+            re_min=START_RE_MIN,
+            re_max=START_RE_MAX,
+            imag_min=START_IMAG_MIN,
+            imag_max=START_IMAG_MAX,
         )
 
         self.app = AppContext(

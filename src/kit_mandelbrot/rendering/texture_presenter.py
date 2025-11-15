@@ -12,7 +12,7 @@ class TexturePresenter:
     def ensure_size(self, size: Tuple[int, int]) -> None:
         w, h = size
         if self.texture is None or self.texture.size != (w, h):
-            # Single-channel float texture (R32F), used as a stability / intensity map
+            # Four-channel float texture (RGBA32F), used as a stability / intensity map
             self.texture = self.ctx.texture((w, h), components=4, dtype="f4")
             self.texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
             self.texture.repeat_x = False

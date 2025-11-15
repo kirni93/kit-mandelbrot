@@ -3,8 +3,8 @@
 // Same input as your present shader: UV of the fullscreen quad
 in vec2 v_uv;
 
-// We render into an R32F texture, so a single float output is fine.
-// Moderngl will attach this as a color attachment with 1 component.
+// We render into an RGBA32F texture, so we output a vec4 (4 components).
+// Moderngl will attach this as a color attachment with 4 components.
 out vec4 f_color;
 
 // Viewport in the complex plane

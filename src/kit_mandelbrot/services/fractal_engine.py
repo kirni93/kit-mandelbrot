@@ -46,7 +46,7 @@ class FractalEngineGPU:
         self.quad = FullscreenQuad(ctx, self.program)
 
         # Defaults
-        self.max_iter = 500
+        self.max_iter = 100
         self.smooth = True
 
     def compute(self, width: int, height: int, viewport: Viewport) -> None:

@@ -56,7 +56,7 @@ class FractalEngineGPU:
 
         assert tex is not None
 
-        # crete a famebuffer that renders into the R32F texture
+        # create a framebuffer that renders into the R32F texture
         fbo = self.ctx.framebuffer(color_attachments=[tex])
         fbo.use()
 

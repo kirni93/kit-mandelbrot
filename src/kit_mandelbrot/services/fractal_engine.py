@@ -60,7 +60,7 @@ class FractalEngineGPU:
         fbo = self.ctx.framebuffer(color_attachments=[tex])
         fbo.use()
 
-        # bind the framebuffer to the viewport
+        # Set the viewport dimensions
         self.ctx.viewport = (0, 0, width, height)
 
         fbo.clear(0.0, 0.0, 0.0, 0.0)

@@ -12,12 +12,14 @@ from kit_mandelbrot.rendering.texture_presenter import TexturePresenter
 from kit_mandelbrot.rendering.quad import FullscreenQuad
 from kit_mandelbrot.rendering.pipeline import RenderPipeline
 from kit_mandelbrot.app_context import AppContext
+from kit_mandelbrot.ui import viewport_overlay
 from kit_mandelbrot.ui.cursor_coords import (
     CursorCoordsOverlay,
     CursorCoordsOverlayConfig,
 )
 from kit_mandelbrot.ui.dependencies import UIDeps
 from kit_mandelbrot.ui.manager import UIManager
+from kit_mandelbrot.ui.viewport_overlay import ViewportOverlay, ViewportOverlayConfig
 
 
 def plot_mandelbrot(
@@ -126,6 +128,11 @@ def main():
     cursor_cords = CursorCoordsOverlay(cursor_cords_config)
 
     app.ui.add(cursor_cords)
+
+    viewport_overlay_config = ViewportOverlayConfig()
+    viewport_overlay = ViewportOverlay(viewport_overlay_config)
+
+    app.ui.add(viewport_overlay)
 
     pyglet.app.run()
 

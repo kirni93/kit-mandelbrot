@@ -84,6 +84,8 @@ class FractalEngineGPU:
         self.quad.draw()
         self.ctx.screen.use()
 
+        fbo.release()
+
 
 def z_generator(c: complex) -> Iterator[complex]:
     """

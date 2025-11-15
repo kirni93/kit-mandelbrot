@@ -1,4 +1,3 @@
-# src/kit_mandelbrot/rendering/quad.py
 from __future__ import annotations
 import moderngl
 import numpy as np

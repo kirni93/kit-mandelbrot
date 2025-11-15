@@ -5,7 +5,7 @@ import moderngl
 from kit_mandelbrot.domain.viewport import Viewport
 from kit_mandelbrot.services.fractal_engine import (
     FractalEngine,
-    FractalEngineCPU,
+    FractalEngineGPU,
 )
 from importlib.resources import files
 from kit_mandelbrot.rendering.texture_presenter import TexturePresenter
@@ -70,7 +70,9 @@ class MandelbrotWindow(pyglet.window.Window):
         presenter = TexturePresenter(ctx)
         presenter.ensure_size((self.width, self.height))  # allocate texture
 
-        engine: FractalEngine = FractalEngineCPU()
+        # engine: FractalEngine = FractalEngineCPU()
+        assert presenter.texture is not None
+        engine: FractalEngine = FractalEngineGPU(ctx=ctx, presenter=presenter)
 
         quad = FullscreenQuad(ctx, program)
         pipeline = RenderPipeline(ctx, program, quad, presenter)
@@ -101,11 +103,7 @@ class MandelbrotWindow(pyglet.window.Window):
         self.ui = UIManager(window=self, deps=deps)
 
     def _recompute_and_upload(self, w: int, h: int) -> None:
-        frame: np.ndarray = self.app.engine.compute(
-            width=w, height=h, viewport=self.app.viewport
-        )
-
-        self.app.presenter.upload(frame)
+        self.app.engine.compute(width=w, height=h, viewport=self.app.viewport)
 
     def on_draw(self) -> None:
         self.clear()

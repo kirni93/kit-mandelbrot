@@ -1,25 +1,90 @@
+import moderngl
 import numpy as np
 from kit_mandelbrot.domain.viewport import Viewport
 from typing import Iterator, Optional, Protocol
 from kit_mandelbrot.config import ESCPAE_RADIUS
 from math import log
+from importlib.resources import files
+from kit_mandelbrot.rendering.quad import FullscreenQuad
+from typing import cast
+
+from kit_mandelbrot.rendering.texture_presenter import TexturePresenter
 
 LN2 = np.log(2.0)
 
 
 class FractalEngine(Protocol):
-    def compute(self, width: int, height: int, viewport: Viewport) -> np.ndarray: ...
+    def compute(self, width: int, height: int, viewport: Viewport) -> None: ...
 
 
 class FractalEngineCPU:
-    def compute(self, width: int, height: int, viewport: Viewport) -> np.ndarray:
-        complex_grid = generate_complex_grid(width=width, height=height, vp=viewport)
+    def compute(self, width: int, height: int, viewport: Viewport) -> None:
+        raise NotImplementedError("CPU based calculated disabled for now.")
+        # complex_grid = generate_complex_grid(width=width, height=height, vp=viewport)
 
-        stability_grid = mandelbrot_stability_vec(
-            c_grid=complex_grid, max_iterations=100, smooth=True
+        # stability_grid = mandelbrot_stability_vec(
+        #   c_grid=complex_grid, max_iterations=100, smooth=True
+        # )
+        # return stability_grid
+
+
+class FractalEngineGPU:
+    def __init__(self, ctx: moderngl.Context, presenter: TexturePresenter) -> None:
+        self.ctx = ctx
+        self.presenter = presenter
+
+        fs_src = (
+            files("kit_mandelbrot.shaders") / "mandelbrot_stability.frag.glsl"
+        ).read_text("utf-8")
+
+        vs_src = (files("kit_mandelbrot.shaders") / "present.vert.glsl").read_text(
+            "utf-8"
         )
 
-        return stability_grid
+        self.program = ctx.program(vertex_shader=vs_src, fragment_shader=fs_src)
+
+        self.quad = FullscreenQuad(ctx, self.program)
+
+        # Defaults
+        self.max_iter = 100
+        self.smooth = True
+
+    def compute(self, width: int, height: int, viewport: Viewport) -> None:
+        self.presenter.ensure_size((width, height))
+
+        tex = self.presenter.texture
+
+        assert tex is not None
+
+        # create a framebuffer that renders into the R32F texture
+        fbo = self.ctx.framebuffer(color_attachments=[tex])
+        fbo.use()
+
+        # Set the viewport dimensions
+        self.ctx.viewport = (0, 0, width, height)
+
+        fbo.clear(0.0, 0.0, 0.0, 0.0)
+
+        # Set uniforms
+        cast(moderngl.Uniform, self.program["re_min"]).value = float(viewport.re_min)
+        cast(moderngl.Uniform, self.program["re_max"]).value = float(viewport.re_max)
+
+        cast(moderngl.Uniform, self.program["imag_min"]).value = float(
+            viewport.imag_min
+        )
+        cast(moderngl.Uniform, self.program["imag_max"]).value = float(
+            viewport.imag_max
+        )
+
+        cast(moderngl.Uniform, self.program["max_iter"]).value = int(self.max_iter)
+        cast(moderngl.Uniform, self.program["smooth_stability"]).value = int(
+            self.smooth
+        )
+
+        self.quad.draw()
+        self.ctx.screen.use()
+
+        fbo.release()
 
 
 def z_generator(c: complex) -> Iterator[complex]:

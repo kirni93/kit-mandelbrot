@@ -18,14 +18,14 @@ class FractalEngine(Protocol):
 
 
 class FractalEngineCPU:
-    def compute(self, width: int, height: int, viewport: Viewport) -> np.ndarray:
-        complex_grid = generate_complex_grid(width=width, height=height, vp=viewport)
+    def compute(self, width: int, height: int, viewport: Viewport) -> None:
+        raise NotImplementedError("CPU based calculated disabled for now.")
+        # complex_grid = generate_complex_grid(width=width, height=height, vp=viewport)
 
-        stability_grid = mandelbrot_stability_vec(
-            c_grid=complex_grid, max_iterations=100, smooth=True
-        )
-
-        return stability_grid
+        # stability_grid = mandelbrot_stability_vec(
+        #   c_grid=complex_grid, max_iterations=100, smooth=True
+        # )
+        # return stability_grid
 
 
 class FractalEngineGPU:

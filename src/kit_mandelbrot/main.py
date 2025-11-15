@@ -5,7 +5,6 @@ import moderngl
 from kit_mandelbrot.domain.viewport import Viewport
 from kit_mandelbrot.services.fractal_engine import (
     FractalEngine,
-    FractalEngineCPU,
     FractalEngineGPU,
 )
 from importlib.resources import files

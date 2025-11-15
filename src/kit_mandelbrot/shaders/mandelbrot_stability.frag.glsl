@@ -45,7 +45,7 @@ float mandelbrot_stability(vec2 c, int maxIter, bool do_smooth) {
 
     // Inside the set → fully stable
     if (i == maxIter) {
-        return 0.0;
+        return 1.0;
     }
 
     // Basic normalized escape: 0..1

@@ -32,7 +32,7 @@ class ViewportOverlay(UIElement):
         pass
 
     def _build_components(self) -> None:
-        if self._deps is None or self._window is None:
+        if self._deps is None:
             return
 
         theme = self._deps.theme
@@ -66,28 +66,22 @@ class ViewportOverlay(UIElement):
             anchor_y="top",
         )
 
-    def _update_theme(self) -> None:
-        if self._deps is None:
-            return
-
-        self._build_components()
-
     def mount(self, window: Window, deps: UIDeps) -> None:
         self._deps = deps
         self._window = window
 
         self._update_config()
-        self._update_theme()
         self._build_components()
 
     def unmount(self, window: Window) -> None:
         self._deps = None
+        self._window = None
 
     def on_config_changed(self, section: Optional[BaseModel]) -> None:
         self._update_config()
 
     def on_theme_changed(self) -> None:
-        self._update_theme()
+        self._build_components()
 
     def _update_layout(self) -> None:
         """Reposition labels in top-right based on current window size."""
@@ -107,7 +101,7 @@ class ViewportOverlay(UIElement):
         self._re_line.x = x
         self._re_line.y = y
 
-        y -= theme.font_small_size + self._config.line_spacing
+        y -= theme.font_main_size + self._config.line_spacing
         self._im_line.x = x
         self._im_line.y = y
 

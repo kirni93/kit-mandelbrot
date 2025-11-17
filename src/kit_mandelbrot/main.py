@@ -19,6 +19,7 @@ from kit_mandelbrot.ui.cursor_coords import (
 )
 from kit_mandelbrot.ui.dependencies import UIDeps
 from kit_mandelbrot.ui.manager import UIManager
+from kit_mandelbrot.ui.theme import DEFAULT_THEME
 from kit_mandelbrot.ui.viewport_overlay import ViewportOverlay, ViewportOverlayConfig
 
 
@@ -93,7 +94,7 @@ class MandelbrotWindow(pyglet.window.Window):
             viewport=vp,
         )
 
-        deps = UIDeps(get_size=self.get_size, viewport=vp)
+        deps = UIDeps(get_size=self.get_size, viewport=vp, theme=DEFAULT_THEME)
 
         self._recompute_and_upload(w=width, h=height)
 

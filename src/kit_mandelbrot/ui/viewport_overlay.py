@@ -11,9 +11,6 @@ from pydantic import BaseModel
 class ViewportOverlayConfig(BaseModel):
     x_pad: int = 12
     y_pad: int = 12
-    font_size: int = 12
-    font_name: str = "Menlo"
-    color: tuple[int, int, int, int] = (230, 230, 230, 255)
 
 
 class ViewportOverlay(UIElement):
@@ -21,17 +18,27 @@ class ViewportOverlay(UIElement):
         super().__init__()
 
         self._config = config
+        self._deps = None
 
         self._headline = pyglet.text.Label(
             text="Viewport:", x=self._config.x_pad, y=self._config.y_pad
         )
 
         self._update_config()
+        self._update_theme()
 
     def _update_config(self) -> None:
-        self._headline.color = self._config.color
-        self._headline.font_size = self._config.font_size
-        self._headline.font_name = self._config.font_name
+        pass
+
+    def _update_theme(self) -> None:
+        if self._deps is None:
+            return
+
+        theme = self._deps.theme
+
+        self._headline.font_name = theme.font
+        self._headline.font_size = theme.font_heading_size
+        self._headline.color = theme.text_primary
 
     def mount(self, window: Window, deps: UIDeps) -> None:
         self._deps = deps
@@ -41,6 +48,9 @@ class ViewportOverlay(UIElement):
 
     def on_config_changed(self, section: Optional[BaseModel]) -> None:
         self._update_config()
+
+    def on_theme_changed(self) -> None:
+        self._update_theme()
 
     def draw(self) -> None:
         self._headline.draw()

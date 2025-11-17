@@ -5,7 +5,7 @@ out vec4 f_color;
 
 // color constants
 //const vec3 COLOR_MIDNIGHTBLUE = vec3(0.098, 0.098, 0.439);
-const vec3 COLOR_MIDNIGHTBLUE = vec3(0.008, 0.008, 0.12);
+const vec3 COLOR_MIDNIGHTBLUE = vec3(0.010, 0.010, 0.20);
 const vec3 COLOR_WHITE = vec3(1.0, 1.0, 1.0);
 const vec3 COLOR_YELLOW = vec3(1.0, 1.0, 0.0);
 const vec3 COLOR_RED = vec3(1.0, 0.0, 0.0);

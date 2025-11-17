@@ -1,5 +1,23 @@
-import numpy as np
+# ---- macOS workaround for pyglet DeallocationObserver recursion ----
+import sys
+
+if sys.platform == "darwin":
+    try:
+        # Import the Cocoa runtime *before* creating any windows
+        from pyglet.libs.darwin.cocoapy import runtime as _cocoart
+
+        def _noop_set_dealloc_observer(*args, **kwargs):
+            # Skip attaching a DeallocationObserver to Objective-C objects.
+            # This avoids the recursion, at the cost of slightly less clever cleanup.
+            return None
+
+        _cocoart._set_dealloc_observer = _noop_set_dealloc_observer
+        print("Patched pyglet _set_dealloc_observer on macOS")
+    except Exception as e:
+        print("Warning: failed to patch pyglet DeallocationObserver:", e)
+
 import plotly.express as px
+import numpy as np
 import pyglet
 import moderngl
 from kit_mandelbrot.domain.viewport import Viewport
@@ -12,7 +30,6 @@ from kit_mandelbrot.rendering.texture_presenter import TexturePresenter
 from kit_mandelbrot.rendering.quad import FullscreenQuad
 from kit_mandelbrot.rendering.pipeline import RenderPipeline
 from kit_mandelbrot.app_context import AppContext
-from kit_mandelbrot.ui import viewport_overlay
 from kit_mandelbrot.ui.cursor_coords import (
     CursorCoordsOverlay,
     CursorCoordsOverlayConfig,
@@ -116,7 +133,7 @@ class MandelbrotWindow(pyglet.window.Window):
         self.ui.draw()
 
     def on_resize(self, width: int, height: int) -> None:
-        super().on_resize(width, height)
+        # super().on_resize(width, height)
         self.app.gl_ctx.viewport = (0, 0, width, height)
         self.app.presenter.ensure_size((width, height))
         self._recompute_and_upload(w=width, h=height)

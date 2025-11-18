@@ -122,6 +122,8 @@ class MandelbrotWindow(pyglet.window.Window):
 
         self.ui = UIManager(window=self, deps=deps)
 
+        self._fps_display = pyglet.window.FPSDisplay(window=self)
+
     def _recompute_and_upload(self, w: int, h: int) -> None:
         self.app.engine.compute(width=w, height=h, viewport=self.app.viewport)
 
@@ -131,6 +133,7 @@ class MandelbrotWindow(pyglet.window.Window):
         self.app.pipeline.draw()
 
         self.ui.draw()
+        self._fps_display.draw()
 
     def on_resize(self, width: int, height: int) -> None:
         # super().on_resize(width, height)

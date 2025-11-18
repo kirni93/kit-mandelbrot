@@ -1,20 +1,21 @@
 # ---- macOS workaround for pyglet DeallocationObserver recursion ----
 import sys
 
-if sys.platform == "darwin":
-    try:
-        # Import the Cocoa runtime *before* creating any windows
-        from pyglet.libs.darwin.cocoapy import runtime as _cocoart
 
-        def _noop_set_dealloc_observer(*args, **kwargs):
-            # Skip attaching a DeallocationObserver to Objective-C objects.
-            # This avoids the recursion, at the cost of slightly less clever cleanup.
-            return None
-
-        _cocoart._set_dealloc_observer = _noop_set_dealloc_observer
-        print("Patched pyglet _set_dealloc_observer on macOS")
-    except Exception as e:
-        print("Warning: failed to patch pyglet DeallocationObserver:", e)
+# if sys.platform == "darwin":
+#    try:
+#        # Import the Cocoa runtime *before* creating any windows
+#        from pyglet.libs.darwin.cocoapy import runtime as _cocoart
+#
+#        def _noop_set_dealloc_observer(*args, **kwargs):
+#            # Skip attaching a DeallocationObserver to Objective-C objects.
+#            # This avoids the recursion, at the cost of slightly less clever cleanup.
+#            return None
+#
+#        _cocoart._set_dealloc_observer = _noop_set_dealloc_observer
+#        print("Patched pyglet _set_dealloc_observer on macOS")
+#    except Exception as e:
+#        print("Warning: failed to patch pyglet DeallocationObserver:", e)
 
 import plotly.express as px
 import numpy as np
@@ -38,6 +39,10 @@ from kit_mandelbrot.ui.dependencies import UIDeps
 from kit_mandelbrot.ui.manager import UIManager
 from kit_mandelbrot.ui.theme import DEFAULT_THEME
 from kit_mandelbrot.ui.viewport_overlay import ViewportOverlay, ViewportOverlayConfig
+from kit_mandelbrot.ui.cmd_prompt_overlay import (
+    CmdPromptOverlay,
+    CmdPromptOverlayConfig,
+)
 
 
 def plot_mandelbrot(
@@ -78,6 +83,10 @@ class MandelbrotWindow(pyglet.window.Window):
         super().__init__(
             width=width, height=height, caption="Mandelbrot Viewer", resizable=True
         )
+
+        # DEBUG psuh all window events
+        self.push_handlers(pyglet.window.event.WindowEventLogger())
+
         ctx = moderngl.create_context()
         ctx.viewport = (0, 0, self.width, self.height)
 
@@ -111,7 +120,12 @@ class MandelbrotWindow(pyglet.window.Window):
             viewport=vp,
         )
 
-        deps = UIDeps(get_size=self.get_size, viewport=vp, theme=DEFAULT_THEME)
+        deps = UIDeps(
+            get_size=self.get_size,
+            viewport=vp,
+            theme=DEFAULT_THEME,
+            update_viewport=self.update_viewport,
+        )
 
         self._recompute_and_upload(w=width, h=height)
 
@@ -122,7 +136,16 @@ class MandelbrotWindow(pyglet.window.Window):
 
         self.ui = UIManager(window=self, deps=deps)
 
-        self._fps_display = pyglet.window.FPSDisplay(window=self)
+    def update_viewport(self) -> None:
+        self._recompute_and_upload(w=self.width, h=self.height)
+
+    def on_key_press(
+        self, symbol: int, modifiers: int
+    ) -> pyglet.event.EVENT_HANDLE_STATE:
+        if symbol == pyglet.window.key.ESCAPE:
+            return pyglet.event.EVENT_HANDLED
+
+        return super().on_key_press(symbol, modifiers)
 
     def _recompute_and_upload(self, w: int, h: int) -> None:
         self.app.engine.compute(width=w, height=h, viewport=self.app.viewport)
@@ -133,7 +156,6 @@ class MandelbrotWindow(pyglet.window.Window):
         self.app.pipeline.draw()
 
         self.ui.draw()
-        self._fps_display.draw()
 
     def on_resize(self, width: int, height: int) -> None:
         # super().on_resize(width, height)
@@ -154,6 +176,11 @@ def main():
     viewport_overlay = ViewportOverlay(viewport_overlay_config)
 
     app.ui.add(viewport_overlay)
+
+    cmd_prompt_config = CmdPromptOverlayConfig()
+    cmd_prompt_overlay = CmdPromptOverlay(cmd_prompt_config)
+
+    app.ui.add(cmd_prompt_overlay)
 
     pyglet.app.run()
 

@@ -2,10 +2,11 @@ from dataclasses import dataclass
 from typing import NamedTuple
 
 DEFAULT_FONT = "Menlo"
-DEFAULT_FONT_SMALL_SIZE = 13
-DEFAULT_FONT_MAIN_SIZE = 15
-DEFAULT_FONT_HEADING_SIZE = 21
-DEFAULT_FONT_TITLE_SIZE = 27
+DEFAULT_MONO_FONT = "Fira Code"
+DEFAULT_FONT_SMALL_SIZE = 16
+DEFAULT_FONT_MAIN_SIZE = 20
+DEFAULT_FONT_HEADING_SIZE = 28
+DEFAULT_FONT_TITLE_SIZE = 36
 
 
 class Color(NamedTuple):
@@ -22,6 +23,12 @@ class Color(NamedTuple):
         b = int(hex_str[4:6], 16)
 
         return cls(r, g, b, alpha)
+
+    def to_hex(self, include_alpha: bool = False) -> str:
+        """Return #RRGGBB or #RRGGBBAA."""
+        if include_alpha:
+            return "#{:02x}{:02x}{:02x}{:02x}".format(self.r, self.g, self.b, self.a)
+        return "#{:02x}{:02x}{:02x}".format(self.r, self.g, self.b)
 
 
 @dataclass(frozen=True)
@@ -62,6 +69,7 @@ class AppTheme:
     text_warning: Color
 
     font: str
+    mono_font: str | None
     font_small_size: int
     font_main_size: int
     font_heading_size: int
@@ -72,6 +80,7 @@ class AppTheme:
         cls,
         p: Base16Palette,
         font: str = DEFAULT_FONT,
+        mono_font: str | None = DEFAULT_MONO_FONT,
         font_small_size: int = DEFAULT_FONT_SMALL_SIZE,
         font_main_size: int = DEFAULT_FONT_MAIN_SIZE,
         font_heading_size: int = DEFAULT_FONT_HEADING_SIZE,
@@ -81,6 +90,7 @@ class AppTheme:
             name=p.scheme,
             author=p.author,
             font=font,
+            mono_font=mono_font,
             font_small_size=font_small_size,
             font_main_size=font_main_size,
             font_heading_size=font_heading_size,

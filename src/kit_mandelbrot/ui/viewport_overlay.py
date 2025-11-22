@@ -24,7 +24,6 @@ class ViewportOverlay(UIElement):
         self._deps: Optional[UIDeps] = None
         self._window: Optional[Window] = None
 
-        self._headline = Label()
         self._re_line = Label()
         self._im_line = Label()
 
@@ -36,16 +35,6 @@ class ViewportOverlay(UIElement):
             return
 
         theme = self._deps.theme
-
-        # Heading
-        self._headline = pyglet.text.Label(
-            text="Viewport",
-            font_name=theme.font,
-            font_size=theme.font_heading_size,
-            color=theme.text_primary,
-            anchor_x="right",
-            anchor_y="top",
-        )
 
         # Lines below heading
         self._re_line = pyglet.text.Label(
@@ -94,9 +83,6 @@ class ViewportOverlay(UIElement):
         x = w - self._config.x_pad
         y_top = h - self._config.y_pad
 
-        self._headline.x = x
-        self._headline.y = y_top
-
         y = y_top - theme.font_heading_size - self._config.line_spacing
         self._re_line.x = x
         self._re_line.y = y
@@ -119,6 +105,5 @@ class ViewportOverlay(UIElement):
         self._update_layout()
 
         # Draw labels
-        self._headline.draw()
         self._re_line.draw()
         self._im_line.draw()

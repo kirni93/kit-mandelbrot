@@ -7,7 +7,8 @@ from pyglet.text import Label
 from pyglet.shapes import BorderedRectangle
 from pyglet.window import key
 
-from kit_mandelbrot.ui import theme
+from kit_mandelbrot.domain.viewport import Viewport
+
 from .dependencies import UIDeps
 from .types import UIElement
 from pyglet.window import Window
@@ -147,14 +148,9 @@ class CmdPromptOverlay(UIElement):
             print("real min bigger than max")
             return
 
-        vp = self._deps.viewport
+        vp = Viewport(re_min=re_min, re_max=re_max, imag_min=im_min, imag_max=im_max)
 
-        vp.re_min = re_min
-        vp.re_max = re_max
-        vp.imag_min = im_min
-        vp.imag_max = im_max
-
-        self._deps.update_viewport()
+        self._deps.update_viewport(vp)
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         if not self._active:

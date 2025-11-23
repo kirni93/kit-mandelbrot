@@ -9,6 +9,6 @@ from kit_mandelbrot.ui.theme import AppTheme
 @dataclass(frozen=True)
 class UIDeps:
     get_size: Callable[[], tuple[int, int]]
-    update_viewport: Callable[[], None]
+    update_viewport: Callable[[Viewport], None]
     viewport: Viewport
     theme: AppTheme

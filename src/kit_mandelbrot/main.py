@@ -1,22 +1,3 @@
-# ---- macOS workaround for pyglet DeallocationObserver recursion ----
-import sys
-
-
-# if sys.platform == "darwin":
-#    try:
-#        # Import the Cocoa runtime *before* creating any windows
-#        from pyglet.libs.darwin.cocoapy import runtime as _cocoart
-#
-#        def _noop_set_dealloc_observer(*args, **kwargs):
-#            # Skip attaching a DeallocationObserver to Objective-C objects.
-#            # This avoids the recursion, at the cost of slightly less clever cleanup.
-#            return None
-#
-#        _cocoart._set_dealloc_observer = _noop_set_dealloc_observer
-#        print("Patched pyglet _set_dealloc_observer on macOS")
-#    except Exception as e:
-#        print("Warning: failed to patch pyglet DeallocationObserver:", e)
-
 import plotly.express as px
 import numpy as np
 import pyglet
@@ -136,7 +117,8 @@ class MandelbrotWindow(pyglet.window.Window):
 
         self.ui = UIManager(window=self, deps=deps)
 
-    def update_viewport(self) -> None:
+    def update_viewport(self, vp: Viewport) -> None:
+        self.app.viewport = vp
         self._recompute_and_upload(w=self.width, h=self.height)
 
     def on_key_press(

@@ -7,9 +7,9 @@ from pyglet.text import Label
 from pyglet.shapes import BorderedRectangle
 from pyglet.window import key
 
-from kit_mandelbrot.domain.viewport import Viewport
+from kit_mandelbrot.app_context import AppContext
 
-from .dependencies import UIDeps
+from .ui_context import UIContext
 from .types import UIElement
 from pyglet.window import Window
 from pydantic import BaseModel
@@ -29,7 +29,8 @@ class CmdPromptOverlay(UIElement):
         super().__init__()
 
         self._config = config
-        self._deps: Optional[UIDeps] = None
+        self._app_ctx: Optional[AppContext] = None
+        self._deps: Optional[UIContext] = None
         self._window: Optional[Window] = None
 
         self._active = False
@@ -91,8 +92,8 @@ class CmdPromptOverlay(UIElement):
 
         self._prompt.color = theme.text_primary
 
-    def mount(self, window: Window, deps: UIDeps) -> None:
-        self._deps = deps
+    def mount(self, window: Window, ctx: UIContext) -> None:
+        self._deps = ctx
         self._window = window
 
         self._update_config()
@@ -111,46 +112,16 @@ class CmdPromptOverlay(UIElement):
         self._active = False
 
     def _execute_cmd(self) -> None:
-        print(self._buffer)
-
-        cmd = self._buffer.strip()
-
-        parts = cmd.split()
-
-        command = parts[0]
-
-        if command in ("vp", "viewport"):
-            self._handle_viewport_command(parts[1:])
-
-        self._buffer = ""
-
-    def _handle_viewport_command(self, args: list[str]) -> None:
         if self._deps is None:
             return
 
-        print(f"try vp with params: {args}")
+        print(self._buffer)
 
-        if len(args) != 4:
-            print("params not matching")
-            return
+        result = self._deps.execute_command(self._buffer)
 
-        try:
-            re_min, re_max, im_min, im_max = [float(a) for a in args]
-        except ValueError:
-            print("Could not cast")
-            return
+        self._buffer = ""
 
-        if re_min > re_max:
-            print("real min bigger than max")
-            return
-
-        if im_min > im_max:
-            print("real min bigger than max")
-            return
-
-        vp = Viewport(re_min=re_min, re_max=re_max, imag_min=im_min, imag_max=im_max)
-
-        self._deps.update_viewport(vp)
+        print(result.message)
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         if not self._active:
@@ -196,6 +167,6 @@ class CmdPromptOverlay(UIElement):
         if self._active:
             caret = self._config.caret_symbols[self._caret_idx]
 
-            self._prompt.text = f"{self._config.prompt_symbol}{self._buffer} {caret}"
+            self._prompt.text = f"{self._config.prompt_symbol}{self._buffer}{caret}"
             self._bg.draw()
             self._prompt.draw()

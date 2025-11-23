@@ -4,7 +4,8 @@ import pyglet
 from typing import Optional
 
 from pyglet.text import Label
-from .dependencies import UIDeps
+
+from .ui_context import UIContext
 from .types import UIElement
 from pyglet.window import Window
 from pydantic import BaseModel
@@ -21,7 +22,7 @@ class ViewportOverlay(UIElement):
         super().__init__()
 
         self._config = config
-        self._deps: Optional[UIDeps] = None
+        self._deps: Optional[UIContext] = None
         self._window: Optional[Window] = None
 
         self._re_line = Label()
@@ -55,8 +56,8 @@ class ViewportOverlay(UIElement):
             anchor_y="top",
         )
 
-    def mount(self, window: Window, deps: UIDeps) -> None:
-        self._deps = deps
+    def mount(self, window: Window, ctx: UIContext) -> None:
+        self._deps = ctx
         self._window = window
 
         self._update_config()

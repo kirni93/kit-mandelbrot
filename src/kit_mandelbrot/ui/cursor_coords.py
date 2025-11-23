@@ -1,7 +1,8 @@
 from __future__ import annotations
 import pyglet
 from typing import Optional
-from .dependencies import UIDeps
+
+from .ui_context import UIContext
 from .types import UIElement
 from pyglet.window import Window
 from pydantic import BaseModel
@@ -15,7 +16,7 @@ class CursorCoordsOverlayConfig(BaseModel):
 
 class CursorCoordsOverlay(UIElement):
     def __init__(self, config: CursorCoordsOverlayConfig) -> None:
-        self._deps: Optional[UIDeps] = None
+        self._deps: Optional[UIContext] = None
         self._x: int = 0
         self._y: int = 0
         self._config = config
@@ -25,8 +26,8 @@ class CursorCoordsOverlay(UIElement):
             text="", x=0, y=0, anchor_x="left", anchor_y="bottom"
         )
 
-    def mount(self, window: Window, deps: UIDeps) -> None:
-        self._deps = deps
+    def mount(self, window: Window, ctx: UIContext) -> None:
+        self._deps = ctx
         self._update_config()
 
     def unmount(self, window: Window) -> None:

@@ -1,10 +1,11 @@
+from typing import Sequence
 from kit_mandelbrot.app_context import AppContext
 from kit_mandelbrot.domain.viewport import Viewport
 from kit_mandelbrot.services.cmd_engine import Command, CommandResult
 
 VP_USAGE: str = "vp <re_min> <re_max> <im_min> <im_max>"
 VP_NAME: str = "vp"
-VP_ALIASES: list[str] = ["viewport"]
+VP_ALIASES: Sequence[str] = ("viewport",)
 VP_SUMMARY: str = "Setting the viewport to the provided window."
 
 

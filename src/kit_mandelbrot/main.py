@@ -29,33 +29,6 @@ from kit_mandelbrot.ui.cmd_prompt_overlay import (
 )
 
 
-def plot_mandelbrot(
-    stability: np.ndarray, vp: Viewport, width: int, height: int
-) -> None:
-    fig = px.imshow(
-        stability,
-        origin="lower",
-        zmin=0.0,
-        zmax=1.0,
-        x=np.linspace(vp.re_min, vp.re_max, width),
-        y=np.linspace(vp.imag_min, vp.imag_max, height),
-        color_continuous_scale=[
-            (0.0, "midnightblue"),
-            (0.5, "white"),
-            (0.65, "yellow"),
-            (0.8, "red"),
-            (1.0, "black"),  # inside the set
-        ],
-    )
-
-    fig.update_layout(
-        xaxis_title="Re(c)",
-        yaxis_title="Im(c)",
-    )
-
-    fig.show()
-
-
 START_RE_MIN = -2.5
 START_RE_MAX = 1.0
 START_IMAG_MIN = -1.5

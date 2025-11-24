@@ -39,16 +39,24 @@ class CommandEngine:
         return "No such command." if cmd is None else f"{cmd.usage} {cmd.summary}"
 
     def prompt_suggest(self, line: str) -> list[str]:
-        parts = line.split()
+        raw = line
+        stripped = line.lstrip()
 
-        curr = (parts or [""])[-1]
-
-        # get all commands if there is no real input yet.
-        if curr == "":
+        # return all main commands when no real input
+        if not stripped:
             return sorted({cmd.name for cmd in self._commands.values()})
 
-        # sort through all matches.
-        return sorted({key for key in self._commands.keys() if key.startswith(curr)})
+        tokens = stripped.split()
+        traling_space = raw.endswith(" ")
+
+        # no command linking for now -> assume only first part is a command
+        if len(tokens) == 1 and not traling_space:
+            curr = tokens[0]
+            return sorted(
+                {key for key in self._commands.keys() if key.startswith(curr)}
+            )
+
+        return []
 
     def execute(self, line: str) -> CommandResult:
         if self._context is None:

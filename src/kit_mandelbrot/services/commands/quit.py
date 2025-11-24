@@ -4,7 +4,10 @@ from kit_mandelbrot.services.cmd_engine import Command, CommandResult
 
 Q_USAGE: str = "q"
 Q_NAME: str = "q"
-Q_ALIASES: Sequence[str] = ("quit",)
+Q_ALIASES: Sequence[str] = (
+    "quit",
+    "exit",
+)
 Q_SUMMARY: str = "Exits the application."
 
 

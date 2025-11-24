@@ -1,5 +1,3 @@
-import plotly.express as px
-import numpy as np
 import pyglet
 import moderngl
 from kit_mandelbrot.domain.viewport import Viewport

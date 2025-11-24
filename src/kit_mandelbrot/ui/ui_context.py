@@ -11,6 +11,7 @@ from kit_mandelbrot.ui.theme import AppTheme
 class UIContext:
     get_size: Callable[[], tuple[int, int]]
     execute_command: Callable[[str], CommandResult]
+    prompt_suggest: Callable[[str], list[str]]
     update_viewport: Callable[[Viewport], None]
     viewport: Viewport
     theme: AppTheme

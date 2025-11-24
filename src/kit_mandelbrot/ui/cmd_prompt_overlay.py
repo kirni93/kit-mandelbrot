@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Awaitable, Optional
 
 from pyglet import clock
 from pyglet.text import Label
@@ -29,7 +29,6 @@ class CmdPromptOverlay(UIElement):
         super().__init__()
 
         self._config = config
-        self._app_ctx: Optional[AppContext] = None
         self._deps: Optional[UIContext] = None
         self._window: Optional[Window] = None
 
@@ -40,6 +39,9 @@ class CmdPromptOverlay(UIElement):
         self._caret_idx = 0
 
         self._buffer = "Some test text for testing the text. It's for testing the text."
+        self._buffer_old = self._buffer
+        self._line_suggest = list()
+        self._suggest_select: Optional[int] = None
 
     def _update_config(self) -> None:
         pass
@@ -103,6 +105,7 @@ class CmdPromptOverlay(UIElement):
         self._window = None
 
     def _activate(self) -> None:
+        self._update_suggestions()
         self._build_components()
         clock.schedule_interval(self._blink_caret, self._config.caret_blink_interval_s)
         self._active = True
@@ -133,7 +136,7 @@ class CmdPromptOverlay(UIElement):
             self._deactivate()
             return
 
-        if symbol == key.ENTER:
+        if symbol == key.ENTER and self._suggest_select is None:
             self._execute_cmd()
             self._deactivate()
             return
@@ -141,6 +144,56 @@ class CmdPromptOverlay(UIElement):
         if symbol == key.BACKSPACE:
             self._buffer = self._buffer[:-1]
             return
+
+        if symbol == key.ENTER and self._suggest_select is not None:
+            self._complete_line()
+            return
+
+        if symbol == key.TAB and modifiers != key.LSHIFT:
+            self._increment_suggest()
+            return
+
+        if symbol == key.TAB and modifiers == key.LSHIFT:
+            self._decrement_suggest()
+            return
+
+    def _decrement_suggest(self):
+        if len(self._line_suggest) == 0:
+            return
+
+        if self._suggest_select is None:
+            self._suggest_select = len(self._line_suggest) - 1
+        else:
+            self._suggest_select = (self._suggest_select - 1) % len(self._line_suggest)
+
+        print(self._suggest_select)
+
+    def _increment_suggest(self):
+        if len(self._line_suggest) == 0:
+            return
+
+        if self._suggest_select is None:
+            self._suggest_select = 0
+        else:
+            self._suggest_select = (self._suggest_select + 1) % len(self._line_suggest)
+
+        print(self._suggest_select)
+
+    def _complete_line(self) -> None:
+        if len(self._line_suggest) == 0 or self._suggest_select is None:
+            return
+
+        suggestion = self._line_suggest[self._suggest_select]
+
+        parts = self._buffer.split() or [""]
+
+        if self._buffer.endswith(" "):
+            parts.append(suggestion)
+        else:
+            parts[-1] = suggestion
+
+        self._buffer = " ".join(parts)
+        self._suggest_select = None
 
     def on_resize(self, width: int, height: int) -> None:
         self._build_components()
@@ -160,6 +213,13 @@ class CmdPromptOverlay(UIElement):
     def _blink_caret(self, dt: float) -> None:
         self._caret_idx = (self._caret_idx + 1) % len(self._config.caret_symbols)
 
+    def _update_suggestions(self) -> None:
+        if self._deps is None:
+            return
+
+        self._line_suggest = self._deps.prompt_suggest(self._buffer)
+        print(self._line_suggest)
+
     def draw(self) -> None:
         if self._deps is None:
             return
@@ -167,6 +227,11 @@ class CmdPromptOverlay(UIElement):
         if self._active:
             caret = self._config.caret_symbols[self._caret_idx]
 
+            if self._buffer != self._buffer_old:
+                self._update_suggestions()
+
             self._prompt.text = f"{self._config.prompt_symbol}{self._buffer}{caret}"
             self._bg.draw()
             self._prompt.draw()
+
+            self._buffer_old = self._buffer

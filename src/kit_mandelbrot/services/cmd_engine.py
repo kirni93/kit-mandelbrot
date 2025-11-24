@@ -38,16 +38,17 @@ class CommandEngine:
         cmd = self._commands.get(name)
         return "No such command." if cmd is None else f"{cmd.usage} {cmd.summary}"
 
-    def line_search(self, line: str) -> list[str]:
-        line = line.strip()
-        first = line.split(maxsplit=1)[0] if line else ""
+    def prompt_suggest(self, line: str) -> list[str]:
+        parts = line.split()
 
-        if not first:
+        curr = (parts or [""])[-1]
+
+        # get all commands if there is no real input yet.
+        if curr == "":
             return sorted({cmd.name for cmd in self._commands.values()})
 
-        return sorted(
-            {cmd.name for cmd in self._commands.values() if cmd.name.startswith(first)}
-        )
+        # sort through all matches.
+        return sorted({key for key in self._commands.keys() if key.startswith(curr)})
 
     def execute(self, line: str) -> CommandResult:
         if self._context is None:

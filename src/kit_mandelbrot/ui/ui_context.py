@@ -10,7 +10,7 @@ from kit_mandelbrot.ui.theme import AppTheme
 @dataclass
 class UIContext:
     get_size: Callable[[], tuple[int, int]]
-    update_viewport: Callable[[Viewport], None]
     execute_command: Callable[[str], CommandResult]
+    update_viewport: Callable[[Viewport], None]
     viewport: Viewport
     theme: AppTheme

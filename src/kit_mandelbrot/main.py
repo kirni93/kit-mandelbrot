@@ -4,6 +4,7 @@ import pyglet
 import moderngl
 from kit_mandelbrot.domain.viewport import Viewport
 from kit_mandelbrot.services.cmd_engine import CommandEngine
+from kit_mandelbrot.services.commands.quit import Q_CMD
 from kit_mandelbrot.services.commands.viewport import VP_CMD
 from kit_mandelbrot.services.fractal_engine import (
     FractalEngine,
@@ -109,6 +110,7 @@ class MandelbrotWindow(pyglet.window.Window):
             pipeline=pipeline,
             engine=engine,
             update_viewport=self.update_viewport,
+            quit=pyglet.app.exit,
         )
 
         self._recompute_and_upload(w=width, h=height)
@@ -120,6 +122,7 @@ class MandelbrotWindow(pyglet.window.Window):
 
         cmd_engine.mount(self.app)
         cmd_engine.register(VP_CMD)
+        cmd_engine.register(Q_CMD)
 
         self.ui = UIManager(window=self, ctx=self.ui_context)
 

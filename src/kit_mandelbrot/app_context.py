@@ -17,3 +17,4 @@ class AppContext:
     pipeline: RenderPipeline
     engine: FractalEngine
     update_viewport: Callable[[Viewport], None]
+    quit: Callable[[], None]

@@ -50,10 +50,10 @@ class CommandEngine:
             return sorted({cmd.name for cmd in self._commands.values()})
 
         tokens = stripped.split()
-        traling_space = raw.endswith(" ")
+        trailing_space = raw.endswith(" ")
 
         # no command linking for now -> assume only first part is a command
-        if len(tokens) == 1 and not traling_space:
+        if len(tokens) == 1 and not trailing_space:
             curr = tokens[0]
             return sorted(
                 {key for key in self._commands.keys() if key.startswith(curr)}

@@ -269,7 +269,7 @@ class CmdPromptOverlay(UIElement):
             )
 
             lbl.color = (
-                theme.text_accent if self._suggest_select == i else theme.text_muted
+                theme.text_accent if self._suggest_select == i else theme.text_primary
             )
             self._suggest_labels.append(lbl)
 

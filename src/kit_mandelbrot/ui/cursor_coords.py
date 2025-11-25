@@ -1,24 +1,22 @@
 from __future__ import annotations
-
 import pyglet
 from typing import Optional
-from .dependencies import UIDeps
+
+from .ui_context import UIContext
 from .types import UIElement
 from pyglet.window import Window
 from pydantic import BaseModel
+from kit_mandelbrot.domain.viewport import screen_to_complex
 
 
 class CursorCoordsOverlayConfig(BaseModel):
     x_pad: int = 12
     y_pad: int = 12
-    font_size: int = 12
-    font_name: str = "Menlo"
-    color: tuple[int, int, int, int] = (230, 230, 230, 255)
 
 
 class CursorCoordsOverlay(UIElement):
     def __init__(self, config: CursorCoordsOverlayConfig) -> None:
-        self._deps: Optional[UIDeps] = None
+        self._deps: Optional[UIContext] = None
         self._x: int = 0
         self._y: int = 0
         self._config = config
@@ -27,18 +25,21 @@ class CursorCoordsOverlay(UIElement):
         self._label = pyglet.text.Label(
             text="", x=0, y=0, anchor_x="left", anchor_y="bottom"
         )
-        self._update_config()
 
-    def mount(self, window: Window, deps: UIDeps) -> None:
-        self._deps = deps
+    def mount(self, window: Window, ctx: UIContext) -> None:
+        self._deps = ctx
+        self._update_config()
 
     def unmount(self, window: Window) -> None:
         self._deps = None
 
     def _update_config(self) -> None:
-        self._label.font_size = self._config.font_size
-        self._label.font_name = self._config.font_name
-        self._label.color = self._config.color
+        if self._deps is None:
+            return
+
+        self._label.font_size = self._deps.theme.font_main_size
+        self._label.font_name = self._deps.theme.font
+        self._label.color = self._deps.theme.text_primary
 
     def on_config_changed(self, section: Optional[BaseModel]) -> None:
         self._update_config()
@@ -50,7 +51,7 @@ class CursorCoordsOverlay(UIElement):
         self._x = x
         self._y = y
         w, h = self._deps.get_size()
-        z = self._deps.viewport.screen_to_complex(x, y, w, h)
+        z = screen_to_complex(self._deps.viewport, x, y, w, h)
 
         self._label.text = f"z={z}"
 

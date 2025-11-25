@@ -1,8 +1,9 @@
-import numpy as np
-import plotly.express as px
 import pyglet
 import moderngl
 from kit_mandelbrot.domain.viewport import Viewport
+from kit_mandelbrot.services.cmd_engine import CommandEngine
+from kit_mandelbrot.services.commands.quit import Q_CMD
+from kit_mandelbrot.services.commands.viewport import VP_CMD
 from kit_mandelbrot.services.fractal_engine import (
     FractalEngine,
     FractalEngineGPU,
@@ -16,35 +17,14 @@ from kit_mandelbrot.ui.cursor_coords import (
     CursorCoordsOverlay,
     CursorCoordsOverlayConfig,
 )
-from kit_mandelbrot.ui.dependencies import UIDeps
+from kit_mandelbrot.ui.ui_context import UIContext
 from kit_mandelbrot.ui.manager import UIManager
-
-
-def plot_mandelbrot(
-    stability: np.ndarray, vp: Viewport, width: int, height: int
-) -> None:
-    fig = px.imshow(
-        stability,
-        origin="lower",
-        zmin=0.0,
-        zmax=1.0,
-        x=np.linspace(vp.re_min, vp.re_max, width),
-        y=np.linspace(vp.imag_min, vp.imag_max, height),
-        color_continuous_scale=[
-            (0.0, "midnightblue"),
-            (0.5, "white"),
-            (0.65, "yellow"),
-            (0.8, "red"),
-            (1.0, "black"),  # inside the set
-        ],
-    )
-
-    fig.update_layout(
-        xaxis_title="Re(c)",
-        yaxis_title="Im(c)",
-    )
-
-    fig.show()
+from kit_mandelbrot.ui.theme import DEFAULT_THEME
+from kit_mandelbrot.ui.viewport_overlay import ViewportOverlay, ViewportOverlayConfig
+from kit_mandelbrot.ui.cmd_prompt_overlay import (
+    CmdPromptOverlay,
+    CmdPromptOverlayConfig,
+)
 
 
 START_RE_MIN = -2.5
@@ -58,6 +38,10 @@ class MandelbrotWindow(pyglet.window.Window):
         super().__init__(
             width=width, height=height, caption="Mandelbrot Viewer", resizable=True
         )
+
+        # DEBUG push all window events
+        self.push_handlers(pyglet.window.event.WindowEventLogger())
+
         ctx = moderngl.create_context()
         ctx.viewport = (0, 0, self.width, self.height)
 
@@ -76,11 +60,21 @@ class MandelbrotWindow(pyglet.window.Window):
 
         quad = FullscreenQuad(ctx, program)
         pipeline = RenderPipeline(ctx, program, quad, presenter)
+        cmd_engine = CommandEngine()
         vp = Viewport(
             re_min=START_RE_MIN,
             re_max=START_RE_MAX,
             imag_min=START_IMAG_MIN,
             imag_max=START_IMAG_MAX,
+        )
+        self.ui_context = UIContext(
+            get_size=self.get_size,
+            viewport=vp,
+            theme=DEFAULT_THEME,
+            update_viewport=self.update_viewport,
+            execute_command=cmd_engine.execute,
+            get_command=cmd_engine.get_command,
+            prompt_suggest=cmd_engine.prompt_suggest,
         )
 
         self.app = AppContext(
@@ -88,10 +82,9 @@ class MandelbrotWindow(pyglet.window.Window):
             presenter=presenter,
             pipeline=pipeline,
             engine=engine,
-            viewport=vp,
+            update_viewport=self.update_viewport,
+            quit=pyglet.app.exit,
         )
-
-        deps = UIDeps(get_size=self.get_size, viewport=vp)
 
         self._recompute_and_upload(w=width, h=height)
 
@@ -100,10 +93,26 @@ class MandelbrotWindow(pyglet.window.Window):
         cursor = self.get_system_mouse_cursor(self.CURSOR_CROSSHAIR)
         self.set_mouse_cursor(cursor)
 
-        self.ui = UIManager(window=self, deps=deps)
+        cmd_engine.mount(self.app)
+        cmd_engine.register(VP_CMD)
+        cmd_engine.register(Q_CMD)
+
+        self.ui = UIManager(window=self, ctx=self.ui_context)
+
+    def update_viewport(self, vp: Viewport) -> None:
+        self.ui_context.viewport = vp
+        self._recompute_and_upload(w=self.width, h=self.height)
+
+    def on_key_press(
+        self, symbol: int, modifiers: int
+    ) -> pyglet.event.EVENT_HANDLE_STATE:
+        if symbol == pyglet.window.key.ESCAPE:
+            return pyglet.event.EVENT_HANDLED
+
+        return super().on_key_press(symbol, modifiers)
 
     def _recompute_and_upload(self, w: int, h: int) -> None:
-        self.app.engine.compute(width=w, height=h, viewport=self.app.viewport)
+        self.app.engine.compute(width=w, height=h, viewport=self.ui_context.viewport)
 
     def on_draw(self) -> None:
         self.clear()
@@ -126,6 +135,16 @@ def main():
     cursor_cords = CursorCoordsOverlay(cursor_cords_config)
 
     app.ui.add(cursor_cords)
+
+    viewport_overlay_config = ViewportOverlayConfig()
+    viewport_overlay = ViewportOverlay(viewport_overlay_config)
+
+    app.ui.add(viewport_overlay)
+
+    cmd_prompt_config = CmdPromptOverlayConfig()
+    cmd_prompt_overlay = CmdPromptOverlay(cmd_prompt_config)
+
+    app.ui.add(cmd_prompt_overlay)
 
     pyglet.app.run()
 

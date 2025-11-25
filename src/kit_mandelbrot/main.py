@@ -122,6 +122,7 @@ class MandelbrotWindow(pyglet.window.Window):
         self.ui.draw()
 
     def on_resize(self, width: int, height: int) -> None:
+        super().on_resize(width, height)
         self.app.gl_ctx.viewport = (0, 0, width, height)
         self.app.presenter.ensure_size((width, height))
         self._recompute_and_upload(w=width, h=height)

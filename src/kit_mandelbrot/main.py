@@ -39,7 +39,7 @@ class MandelbrotWindow(pyglet.window.Window):
             width=width, height=height, caption="Mandelbrot Viewer", resizable=True
         )
 
-        # DEBUG psuh all window events
+        # DEBUG push all window events
         self.push_handlers(pyglet.window.event.WindowEventLogger())
 
         ctx = moderngl.create_context()

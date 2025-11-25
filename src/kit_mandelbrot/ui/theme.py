@@ -109,7 +109,7 @@ class AppTheme:
 
 
 DEFAULT_PALETTE = Base16Palette(
-    scheme="Dfault Scheme",
+    scheme="Default Scheme",
     author="KIT",
     base00=Color.from_hex("#1a1b26"),
     base01=Color.from_hex("#1f2335"),

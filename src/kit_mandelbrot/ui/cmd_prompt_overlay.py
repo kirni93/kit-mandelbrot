@@ -12,6 +12,9 @@ from .types import UIElement
 from pyglet.window import Window
 from pydantic import BaseModel
 
+BACKSPACE_REPEAT_DELAY = 0.4  # seconds before repeat starts
+BACKSPACE_REPEAT_INTERVAL = 0.04  # seconds between repeats
+
 
 class CmdPromptOverlayConfig(BaseModel):
     pad: float = 0.4
@@ -45,9 +48,72 @@ class CmdPromptOverlay(UIElement):
         self._suggest_select: Optional[int] = None
         self._suggest_labels: list[Label] = []
         self._suggest_bg = BorderedRectangle(0, 0, 0, 0, border=1)
+        self._help_bg = BorderedRectangle(0, 0, 0, 0, border=1)
+        self._help_label = Label("", 0, 0)
 
     def _update_config(self) -> None:
         pass
+
+    def _position_help_label(self, font_size: int, pad_y: int) -> None:
+        if not self._help_label.text:
+            return
+
+        pad_x = int(font_size * 0.7)
+
+        self._help_label.x = self._help_bg.x + pad_x
+        self._help_label.y = self._help_bg.y + self._help_bg.height - pad_y
+
+    def _build_help(self) -> None:
+        if self._deps is None:
+            return
+
+        theme = self._deps.theme
+        font = theme.font
+        font_size = theme.font_main_size
+
+        # panel geometry (width, x; height will be adjusted later)
+        self._help_bg.x = self._suggest_bg.x + self._suggest_bg.width + 1
+        self._help_bg.y = self._suggest_bg.y
+        self._help_bg.width = self._bg.width - self._suggest_bg.width - 1
+
+        self._help_bg.color = theme.panel_bg
+        self._help_bg.border_color = theme.panel_border
+        self._help_bg.border = self._suggest_bg.border
+
+        if self._suggest_select is None or not self._line_suggest:
+            self._help_label.text = ""
+            self._help_bg.height = self._suggest_bg.height  # or 0
+            return
+
+        name = self._line_suggest[self._suggest_select]
+        cmd = self._deps.get_command(name)
+        if cmd is None:
+            self._help_label.text = ""
+            self._help_bg.height = self._suggest_bg.height
+            return
+
+        usage = cmd.usage or cmd.name
+        summary = cmd.summary or ""
+        nl = "\n"
+        help_text = f"usage: {usage}{nl}{nl}{summary}"
+
+        pad_x = int(font_size * 0.7)
+        pad_y = int(font_size * 0.4)
+
+        self._help_label.text = help_text
+        self._help_label.font_name = font
+        self._help_label.font_size = font_size
+        self._help_label.color = theme.text_primary
+
+        self._help_label.anchor_x = "left"
+        self._help_label.anchor_y = "top"
+
+        self._help_label.width = int(self._help_bg.width - 2 * pad_x)
+        self._help_label.multiline = True
+
+        # provisional height based on text
+        text_height = self._help_label.content_height
+        self._help_bg.height = pad_y * 2 + text_height
 
     def _build_components(self) -> None:
         if self._deps is None or self._window is None:
@@ -164,12 +230,13 @@ class CmdPromptOverlay(UIElement):
 
         if not self._line_suggest:
             self._suggest_bg.height = 0
+            self._help_bg.height = 0
+            self._help_label.text = ""
             return
 
         mono_font = theme.font
         font_size = theme.font_main_size
 
-        # geometry
         pad_x = int(font_size * 0.7)
         pad_y = int(font_size * 0.4)
         line_height = font_size + pad_y
@@ -181,16 +248,12 @@ class CmdPromptOverlay(UIElement):
         self._suggest_bg.x = self._bg.x
         self._suggest_bg.width = self._bg.width / 3
         self._suggest_bg.height = pad_y * 2 + count * line_height
-
-        # directly below prompt bar
         self._suggest_bg.y = self._bg.y - self._suggest_bg.height - 1
 
-        # styling of suggestion panel
         self._suggest_bg.color = theme.panel_bg
         self._suggest_bg.border_color = theme.panel_border
         self._suggest_bg.border = max(1, font_size // 10)
 
-        # label placement
         base_x = self._suggest_bg.x + pad_x
         base_y = self._suggest_bg.y + self._suggest_bg.height - pad_y - font_size
 
@@ -205,18 +268,27 @@ class CmdPromptOverlay(UIElement):
                 anchor_y="baseline",
             )
 
-            if self._suggest_select == i:
-                lbl.color = theme.panel_border_active  # highlight
-            else:
-                lbl.color = theme.text_muted
-
+            lbl.color = (
+                theme.text_accent if self._suggest_select == i else theme.text_muted
+            )
             self._suggest_labels.append(lbl)
+
+        # build help panel (computes geometry & text, but not final y of label)
+        self._build_help()
+
+        # unify heights
+        max_height = max(self._help_bg.height, self._suggest_bg.height)
+        self._suggest_bg.height = max_height
+        self._help_bg.height = max_height
+        self._suggest_bg.y = self._bg.y - max_height - 1
+        self._help_bg.y = self._suggest_bg.y
+
+        # now that heights are final, position the help label
+        self._position_help_label(font_size, pad_y)
 
     def _execute_cmd(self) -> None:
         if self._deps is None:
             return
-
-        print(self._buffer)
 
         result = self._deps.execute_command(self._buffer)
 
@@ -249,12 +321,10 @@ class CmdPromptOverlay(UIElement):
 
         if symbol == key.TAB and not is_shift:
             self._tab_forward()
-            print(self._suggest_select)
             return
 
         if symbol == key.TAB and is_shift:
             self._tab_backward()
-            print(self._suggest_select)
             return
 
     def _enter(self) -> None:
@@ -351,7 +421,6 @@ class CmdPromptOverlay(UIElement):
 
         self._line_suggest = self._deps.prompt_suggest(self._buffer)
         self._build_suggestion_labels()
-        print(self._line_suggest)
 
     def draw(self) -> None:
         if self._deps is None:
@@ -367,6 +436,8 @@ class CmdPromptOverlay(UIElement):
 
             if self._suggest_labels:
                 self._suggest_bg.draw()
+                self._help_bg.draw()
+                self._help_label.draw()
 
             for label in self._suggest_labels:
                 label.draw()

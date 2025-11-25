@@ -34,6 +34,9 @@ class CommandEngine:
         for name in cmd.aliases:
             self._commands[name] = cmd
 
+    def get_command(self, name: str) -> Optional[Command]:
+        return self._commands.get(name)
+
     def command_help(self, name: str) -> str:
         cmd = self._commands.get(name)
         return "No such command." if cmd is None else f"{cmd.usage} {cmd.summary}"

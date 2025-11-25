@@ -73,6 +73,7 @@ class MandelbrotWindow(pyglet.window.Window):
             theme=DEFAULT_THEME,
             update_viewport=self.update_viewport,
             execute_command=cmd_engine.execute,
+            get_command=cmd_engine.get_command,
             prompt_suggest=cmd_engine.prompt_suggest,
         )
 

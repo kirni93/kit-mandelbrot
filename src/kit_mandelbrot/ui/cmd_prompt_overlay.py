@@ -43,7 +43,7 @@ class CmdPromptOverlay(UIElement):
         self._prompt = Label("", 0, 0)
         self._caret_idx = 0
 
-        self._buffer = "Some test text for testing the text. It's for testing the text."
+        self._buffer = ""
         self._line_suggest = list()
         self._suggest_select: Optional[int] = None
         self._suggest_labels: list[Label] = []

@@ -61,6 +61,7 @@ class AppTheme:
     window_bg: Color
     panel_bg: Color
     panel_border: Color
+    panel_border_active: Color
 
     text_primary: Color
     text_muted: Color
@@ -98,6 +99,7 @@ class AppTheme:
             window_bg=p.base00,
             panel_bg=p.base01,
             panel_border=p.base03,
+            panel_border_active=p.base0D,
             text_primary=p.base05,
             text_muted=p.base04,
             text_accent=p.base0D,

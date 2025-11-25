@@ -4,7 +4,7 @@ from typing import Optional
 
 from pyglet import clock
 from pyglet.text import Label
-from pyglet.shapes import BorderedRectangle
+from pyglet.shapes import BorderedRectangle, Rectangle
 from pyglet.window import key
 
 from .ui_context import UIContext
@@ -17,7 +17,7 @@ class CmdPromptOverlayConfig(BaseModel):
     pad: float = 0.4
     y_pos: float = 0.9
     width: float = 0.5
-    prompt_symbol: str = ":>"
+    prompt_symbol: str = "> "
     caret_symbols: str = "| "
     caret_blink_interval_s: float = 0.5
     max_suggests: int = 10
@@ -34,6 +34,9 @@ class CmdPromptOverlay(UIElement):
         self._active = False
 
         self._bg = BorderedRectangle(0, 0, 0, 0, border=1)
+        self._title_label = Label("", 0, 0)
+        self._title_bg = Rectangle(0, 0, 0, 0)
+        self._prompt_symbol = Label("", 0, 0, 0, 0)
         self._prompt = Label("", 0, 0)
         self._caret_idx = 0
 
@@ -41,6 +44,7 @@ class CmdPromptOverlay(UIElement):
         self._line_suggest = list()
         self._suggest_select: Optional[int] = None
         self._suggest_labels: list[Label] = []
+        self._suggest_bg = BorderedRectangle(0, 0, 0, 0, border=1)
 
     def _update_config(self) -> None:
         pass
@@ -58,7 +62,7 @@ class CmdPromptOverlay(UIElement):
         pad = int(font_size * self._config.pad)
 
         w = int(width * self._config.width)
-        h = int(pad * 2 + font_size)  # bg height in px
+        h = int(pad * 2 + font_size * 2)  # bg height in px
 
         # --- center position in screen coords ---
         x_center = width / 2
@@ -70,28 +74,66 @@ class CmdPromptOverlay(UIElement):
 
         # --- background rectangle ---
         self._bg.color = theme.panel_bg
-        self._bg.border_color = theme.panel_border
+        self._bg.border_color = theme.panel_border_active
         self._bg.border = max(1, font_size // 10)
         self._bg.width = w
         self._bg.height = h
         self._bg.x = x
         self._bg.y = y
 
-        # --- label (prompt) ---
+        # --- prompt
         self._prompt.font_name = theme.mono_font or theme.font
         self._prompt.font_size = font_size
 
-        # leave some padding on both sides for the text
-        self._prompt.width = self._bg.width - 2 * pad
+        self._prompt_symbol.font_name = self._prompt.font_name
+        self._prompt_symbol.font_size = self._prompt.font_size
+        self._prompt_symbol.text = self._config.prompt_symbol
+        self._prompt_symbol.color = self._bg.border_color
 
-        # anchor left/center so y is the vertical center of the text
         self._prompt.anchor_x = "left"
         self._prompt.anchor_y = "center"
 
-        self._prompt.x = self._bg.x + pad
+        self._prompt_symbol.anchor_x = self._prompt.anchor_x
+        self._prompt_symbol.anchor_y = self._prompt.anchor_y
+
+        self._prompt_symbol.x = self._bg.x + pad
+        self._prompt.x = self._prompt_symbol.x + self._prompt_symbol.content_width
         self._prompt.y = self._bg.y + self._bg.height / 2
+        self._prompt_symbol.y = self._prompt.y
 
         self._prompt.color = theme.text_primary
+
+        # title label
+        self._title_label.font_size = theme.font_small_size
+        self._title_label.font_name = theme.font
+        self._title_label.text = "Cmdline"
+        self._title_label.anchor_x = "center"
+        self._title_label.anchor_y = "center"
+        self._title_label.color = self._bg.border_color
+        # compute title paddings
+        title_pad_x = int(self._title_label.font_size * 0.8)
+        title_pad_y = int(self._title_label.font_size * 0.4)
+
+        # label will sit exactly on the top border line
+        border_y = self._bg.y + self._bg.height
+
+        # center horizontally over the bg
+        self._title_label.x = x_center
+        self._title_label.y = border_y
+
+        # get intrinsic label size
+        title_w = self._title_label.content_width
+        title_h = self._title_label.content_height
+
+        # title background rectangle, centered on the border line
+        bg_w = int(title_w + 2 * title_pad_x)
+        bg_h = int(title_h + 2 * title_pad_y)
+
+        self._title_bg.width = bg_w
+        self._title_bg.height = bg_h
+        self._title_bg.color = self._bg.color
+        self._title_bg.x = int(x_center - bg_w / 2)
+        self._title_bg.y = int(border_y - bg_h / 2)
 
     def mount(self, window: Window, ctx: UIContext) -> None:
         self._deps = ctx
@@ -118,37 +160,53 @@ class CmdPromptOverlay(UIElement):
             return
 
         theme = self._deps.theme
-
         self._suggest_labels.clear()
 
         if not self._line_suggest:
+            self._suggest_bg.height = 0
             return
 
-        font_size = theme.font_small_size
-        font = theme.font
-        pad = int(theme.font_main_size * self._config.pad)
-        # start below the prompt background
-        x = self._bg.x + pad
-        base_y = self._bg.y - self._bg.height - pad // 2
+        mono_font = theme.font
+        font_size = theme.font_main_size
 
-        # how many suggestions to show at once
-        max_items = self._config.max_suggests
-        line_height = font_size + 2
+        # geometry
+        pad_x = int(font_size * 0.7)
+        pad_y = int(font_size * 0.4)
+        line_height = font_size + pad_y
 
-        for i, text in enumerate(self._line_suggest[:max_items]):
+        items = self._line_suggest[: self._config.max_suggests]
+        count = len(items)
+
+        # suggestion panel size & position
+        self._suggest_bg.x = self._bg.x
+        self._suggest_bg.width = self._bg.width / 3
+        self._suggest_bg.height = pad_y * 2 + count * line_height
+
+        # directly below prompt bar
+        self._suggest_bg.y = self._bg.y - self._suggest_bg.height - 1
+
+        # styling of suggestion panel
+        self._suggest_bg.color = theme.panel_bg
+        self._suggest_bg.border_color = theme.panel_border
+        self._suggest_bg.border = max(1, font_size // 10)
+
+        # label placement
+        base_x = self._suggest_bg.x + pad_x
+        base_y = self._suggest_bg.y + self._suggest_bg.height - pad_y - font_size
+
+        for i, item in enumerate(items):
             lbl = Label(
-                text,
-                x=x,
+                item,
+                x=base_x,
                 y=base_y - i * line_height,
-                font_name=font,
+                font_name=mono_font,
                 font_size=font_size,
                 anchor_x="left",
-                anchor_y="bottom",
+                anchor_y="baseline",
             )
 
-            # selected suggestion gets accent color, others muted
-            if self._suggest_select is not None and self._suggest_select == i:
-                lbl.color = theme.text_accent
+            if self._suggest_select == i:
+                lbl.color = theme.panel_border_active  # highlight
             else:
                 lbl.color = theme.text_muted
 
@@ -302,10 +360,16 @@ class CmdPromptOverlay(UIElement):
         if self._active:
             caret = self._config.caret_symbols[self._caret_idx]
 
-            self._prompt.text = f"{self._config.prompt_symbol}{self._buffer}{caret}"
+            self._prompt.text = f"{self._buffer}{caret}"
             self._bg.draw()
+            self._title_bg.draw()
+            self._title_label.draw()
+
+            if self._suggest_labels:
+                self._suggest_bg.draw()
 
             for label in self._suggest_labels:
                 label.draw()
 
+            self._prompt_symbol.draw()
             self._prompt.draw()

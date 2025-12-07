@@ -6,7 +6,7 @@ from pyglet.shapes import BorderedRectangle
 from .ui_context import UIContext
 from .types import UIElement
 from pyglet.window import Window
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from kit_mandelbrot.domain.viewport import Viewport, from_points, screen_to_complex
 from pyglet.window import mouse
 
@@ -15,6 +15,13 @@ class BoxZoomConfig(BaseModel):
     opacity: int = 200
     min_box_width: int = 10
     min_box_height: int = 10
+
+    @field_validator("opacity")
+    @classmethod
+    def check_opacity(cls, v: int) -> int:
+        if not 0 <= v <= 255:
+            raise ValueError("opacity must be between 0 und 255")
+        return v
 
 
 class BoxZoom(UIElement):

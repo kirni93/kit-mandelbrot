@@ -13,6 +13,7 @@ from kit_mandelbrot.rendering.texture_presenter import TexturePresenter
 from kit_mandelbrot.rendering.quad import FullscreenQuad
 from kit_mandelbrot.rendering.pipeline import RenderPipeline
 from kit_mandelbrot.app_context import AppContext
+from kit_mandelbrot.ui.box_zoom import BoxZoom, BoxZoomConfig
 from kit_mandelbrot.ui.cursor_coords import (
     CursorCoordsOverlay,
     CursorCoordsOverlayConfig,
@@ -145,6 +146,11 @@ def main():
     cmd_prompt_overlay = CmdPromptOverlay(cmd_prompt_config)
 
     app.ui.add(cmd_prompt_overlay)
+
+    box_zoom_config = BoxZoomConfig()
+    box_zoom = BoxZoom(box_zoom_config)
+
+    app.ui.add(box_zoom)
 
     pyglet.app.run()
 

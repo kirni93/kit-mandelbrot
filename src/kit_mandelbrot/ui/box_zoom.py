@@ -55,14 +55,16 @@ class BoxZoom(UIElement):
     def on_mouse_drag(
         self, x: int, y: int, dx: int, dy: int, buttons, modifiers
     ) -> None:
-        if buttons & mouse.LEFT:
-            if not self._dragging:
-                self._x_start = x
-                self._y_start = y
-                self._dragging = True
+        if not (buttons & mouse.LEFT):
+            return
 
-            self._x = x
-            self._y = y
+        if not self._dragging:
+            self._x_start = x
+            self._y_start = y
+            self._dragging = True
+
+        self._x = x
+        self._y = y
 
     def _set_viewport(self) -> None:
         if self._deps is None:
@@ -93,13 +95,17 @@ class BoxZoom(UIElement):
         )
 
     def on_mouse_release(self, x: int, y: int, button, modifiers) -> None:
-        if button & mouse.LEFT:
-            if self._dragging:
-                self._dragging = False
-                self._x_end = x
-                self._y_end = y
+        if not (button & mouse.LEFT):
+            return
 
-                self._set_viewport()
+        if not self._dragging:
+            return
+
+        self._dragging = False
+        self._x_end = x
+        self._y_end = y
+
+        self._set_viewport()
 
     def draw(self) -> None:
         if self._deps is None:

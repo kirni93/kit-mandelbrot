@@ -7,7 +7,7 @@ from .ui_context import UIContext
 from .types import UIElement
 from pyglet.window import Window
 from pydantic import BaseModel, field_validator
-from kit_mandelbrot.domain.viewport import Viewport, from_points, screen_to_complex
+from kit_mandelbrot.domain.viewport import viewport_from_points, screen_to_complex
 from pyglet.window import mouse
 
 
@@ -26,7 +26,7 @@ class BoxZoomConfig(BaseModel):
 
 class BoxZoom(UIElement):
     def __init__(self, config: BoxZoomConfig) -> None:
-        self._deps: Optional[UIContext] = None
+        self._ctx: Optional[UIContext] = None
         self._x: int = 0
         self._y: int = 0
         self._x_start: int = 0
@@ -38,14 +38,14 @@ class BoxZoom(UIElement):
         self._box = BorderedRectangle(0, 0, 0, 0, border=1)
 
     def mount(self, window: Window, ctx: UIContext) -> None:
-        self._deps = ctx
+        self._ctx = ctx
         self._update_config()
 
     def unmount(self, window: Window) -> None:
-        self._deps = None
+        self._ctx = None
 
     def _update_config(self) -> None:
-        if self._deps is None:
+        if self._ctx is None:
             return
 
         self._build_components()
@@ -54,11 +54,11 @@ class BoxZoom(UIElement):
         self._update_config()
 
     def _build_components(self) -> None:
-        if self._deps is None:
+        if self._ctx is None:
             return
 
-        self._box.color = self._deps.theme.panel_bg
-        self._box.border_color = self._deps.theme.panel_border_active
+        self._box.color = self._ctx.theme.panel_bg
+        self._box.border_color = self._ctx.theme.panel_border_active
         self._box.opacity = self._config.opacity
 
     def on_mouse_drag(
@@ -76,10 +76,10 @@ class BoxZoom(UIElement):
         self._y = y
 
     def _set_viewport(self) -> None:
-        if self._deps is None:
+        if self._ctx is None:
             return
 
-        screen_w, screen_h = self._deps.get_size()
+        screen_w, screen_h = self._ctx.get_size()
 
         min_x = min(self._x_start, self._x_end)
         max_x = max(self._x_start, self._x_end)
@@ -92,12 +92,12 @@ class BoxZoom(UIElement):
         if abs(max_y - min_y) < self._config.min_box_height:
             return
 
-        c1 = screen_to_complex(self._deps.viewport, min_x, min_y, screen_w, screen_h)
-        c2 = screen_to_complex(self._deps.viewport, max_x, max_y, screen_w, screen_h)
+        c1 = screen_to_complex(self._ctx.viewport, min_x, min_y, screen_w, screen_h)
+        c2 = screen_to_complex(self._ctx.viewport, max_x, max_y, screen_w, screen_h)
 
-        vp = from_points(c1, c2)
+        vp = viewport_from_points(c1, c2)
 
-        self._deps.update_viewport(vp)
+        self._ctx.update_viewport(vp)
 
     def on_mouse_release(self, x: int, y: int, button, modifiers) -> None:
         if not (button & mouse.LEFT):
@@ -113,7 +113,7 @@ class BoxZoom(UIElement):
         self._set_viewport()
 
     def draw(self) -> None:
-        if self._deps is None:
+        if self._ctx is None:
             return
 
         if self._dragging:

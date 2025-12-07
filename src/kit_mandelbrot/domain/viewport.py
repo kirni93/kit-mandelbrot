@@ -8,7 +8,7 @@ class Viewport(NamedTuple):
     imag_max: float
 
 
-def from_points(c1: complex, c2: complex) -> Viewport:
+def viewport_from_points(c1: complex, c2: complex) -> Viewport:
     re_min = min(c1.real, c2.real)
     re_max = max(c1.real, c2.real)
     imag_min = min(c1.imag, c2.imag)
@@ -24,7 +24,7 @@ def from_points(c1: complex, c2: complex) -> Viewport:
 
 def screen_to_complex(vp: Viewport, x: int, y: int, width: int, height: int) -> complex:
     """Convert screen coordinates to a complex-plane coordinate"""
-    re = vp.re_min + (x / width) * (vp.re_max - vp.re_min)
-    imag = vp.imag_min + (y / height) * (vp.imag_max - vp.imag_min)
+    re = vp.re_min + ((x + 0.5) / width) * (vp.re_max - vp.re_min)
+    imag = vp.imag_min + ((y + 0.5) / height) * (vp.imag_max - vp.imag_min)
 
     return complex(real=re, imag=imag)

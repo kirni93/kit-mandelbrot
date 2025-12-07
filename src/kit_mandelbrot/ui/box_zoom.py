@@ -13,6 +13,8 @@ from pyglet.window import mouse
 
 class BoxZoomConfig(BaseModel):
     opacity: int = 200
+    min_box_width: int = 10
+    min_box_height: int = 10
 
 
 class BoxZoom(UIElement):
@@ -76,6 +78,12 @@ class BoxZoom(UIElement):
         max_x = max(self._x_start, self._x_end)
         min_y = min(self._y_start, self._y_end)
         max_y = max(self._y_start, self._y_end)
+
+        if abs(max_x - min_x) < self._config.min_box_width:
+            return
+
+        if abs(max_y - min_y) < self._config.min_box_height:
+            return
 
         c1 = screen_to_complex(self._deps.viewport, min_x, min_y, screen_w, screen_h)
         c2 = screen_to_complex(self._deps.viewport, max_x, max_y, screen_w, screen_h)

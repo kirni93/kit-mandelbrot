@@ -7,7 +7,7 @@ from .ui_context import UIContext
 from .types import UIElement
 from pyglet.window import Window
 from pydantic import BaseModel
-from kit_mandelbrot.domain.viewport import Viewport, screen_to_complex
+from kit_mandelbrot.domain.viewport import Viewport, from_points, screen_to_complex
 from pyglet.window import mouse
 
 
@@ -88,19 +88,9 @@ class BoxZoom(UIElement):
         c1 = screen_to_complex(self._deps.viewport, min_x, min_y, screen_w, screen_h)
         c2 = screen_to_complex(self._deps.viewport, max_x, max_y, screen_w, screen_h)
 
-        re_min = min(c1.real, c2.real)
-        re_max = max(c1.real, c2.real)
-        imag_min = min(c1.imag, c2.imag)
-        imag_max = max(c1.imag, c2.imag)
+        vp = from_points(c1, c2)
 
-        self._deps.update_viewport(
-            Viewport(
-                re_min=re_min,
-                re_max=re_max,
-                imag_min=imag_min,
-                imag_max=imag_max,
-            )
-        )
+        self._deps.update_viewport(vp)
 
     def on_mouse_release(self, x: int, y: int, button, modifiers) -> None:
         if not (button & mouse.LEFT):

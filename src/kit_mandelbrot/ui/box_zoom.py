@@ -7,7 +7,7 @@ from .ui_context import UIContext
 from .types import UIElement
 from pyglet.window import Window
 from pydantic import BaseModel
-from kit_mandelbrot.domain.viewport import screen_to_complex
+from kit_mandelbrot.domain.viewport import Viewport, screen_to_complex
 from pyglet.window import mouse
 
 
@@ -64,12 +64,42 @@ class BoxZoom(UIElement):
             self._x = x
             self._y = y
 
+    def _set_viewport(self) -> None:
+        if self._deps is None:
+            return
+
+        screen_w, screen_h = self._deps.get_size()
+
+        min_x = min(self._x_start, self._x_end)
+        max_x = max(self._x_start, self._x_end)
+        min_y = min(self._y_start, self._y_end)
+        max_y = max(self._y_start, self._y_end)
+
+        c1 = screen_to_complex(self._deps.viewport, min_x, min_y, screen_w, screen_h)
+        c2 = screen_to_complex(self._deps.viewport, max_x, max_y, screen_w, screen_h)
+
+        re_min = min(c1.real, c2.real)
+        re_max = max(c1.real, c2.real)
+        imag_min = min(c1.imag, c2.imag)
+        imag_max = max(c1.imag, c2.imag)
+
+        self._deps.update_viewport(
+            Viewport(
+                re_min=re_min,
+                re_max=re_max,
+                imag_min=imag_min,
+                imag_max=imag_max,
+            )
+        )
+
     def on_mouse_release(self, x: int, y: int, button, modifiers) -> None:
         if button & mouse.LEFT:
             if self._dragging:
                 self._dragging = False
                 self._x_end = x
                 self._y_end = y
+
+                self._set_viewport()
 
     def draw(self) -> None:
         if self._deps is None:

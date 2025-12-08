@@ -107,7 +107,7 @@ class Callout:
         if cy + callout_h > win_h - self.margin:
             cy = self.anchor_y - self.offset_y - callout_h
 
-        # anchor directly ot the coordinates
+        # anchor directly to the coordinates
         self._anchor.x = self.anchor_x
         self._anchor.y = self.anchor_y
         self._anchor.radius = self.anchor_radius

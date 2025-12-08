@@ -18,3 +18,4 @@ class AppContext:
     engine: FractalEngine
     update_viewport: Callable[[Viewport], None]
     quit: Callable[[], None]
+    toggle_smooth: Callable[[], bool]

@@ -23,35 +23,28 @@ vec2 plane_coords(vec2 uv) {
     return vec2(cre, cim);
 }
 
-// Compute raw + smooth iteration; return a 0..1 "stability" value
-float mandelbrot_stability(vec2 c, int maxIter) {
-    vec2 z = vec2(0.0);
-    int i = 0;
-
-    for (; i < maxIter; ++i) {
-        float x = z.x;
-        float y = z.y;
-        float x2 = x * x;
-        float y2 = y * y;
-
-        if (x2 + y2 > 4.0) {
-            break;
-        }
-
-        z = vec2(x2 - y2 + c.x,
-                 2.0 * x * y + c.y);
-    }
-    // Inside the set → fully stable
-    if (i == maxIter) {
-        return 1.0;
-    }
-    float base = float(i) / float(maxIter);
-
-    return base;
-}
-
 void main() {
   vec2 c = plane_coords(v_uv);
-  float s = mandelbrot_stability(c, max_iter);
-  f_color = vec4(s, 0.0, 0.0, 1.0);
+
+  vec2 z = vec2(0.0);
+  int i = 0;
+
+  for(; i < max_iter; ++i) {
+    float x = z.x;
+    float y = z.y;
+    float x2 = x * x;
+    float y2 = y * y;
+
+    if (x2 + y2 > 4.0) {
+      break;
+    }
+
+    z = vec2(x2 - y2 + c.x, 2.0 * x * y + c.y);
+  }
+
+  float iter_f = float(i);
+  float s = iter_f / float(max_iter);
+  float iter_max = float(max_iter);
+
+  f_color = vec4(s, iter_f, z.x, z.y);
 }

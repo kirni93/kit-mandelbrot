@@ -1,8 +1,10 @@
+from math import fabs
 import pyglet
 import moderngl
 from kit_mandelbrot.domain.viewport import Viewport
 from kit_mandelbrot.services.cmd_engine import CommandEngine
 from kit_mandelbrot.services.commands.quit import Q_CMD
+from kit_mandelbrot.services.commands.toggle_smooth import TOOGLE_SMOOTH_CMD
 from kit_mandelbrot.services.commands.viewport import VP_CMD
 from kit_mandelbrot.services.fractal_engine import (
     FractalEngine,
@@ -14,19 +16,15 @@ from kit_mandelbrot.rendering.quad import FullscreenQuad
 from kit_mandelbrot.rendering.pipeline import RenderPipeline
 from kit_mandelbrot.app_context import AppContext
 from kit_mandelbrot.ui.box_zoom import BoxZoom, BoxZoomConfig
-from kit_mandelbrot.ui.cursor_coords import (
-    CursorCoordsOverlay,
-    CursorCoordsOverlayConfig,
-)
 from kit_mandelbrot.ui.ui_context import UIContext
 from kit_mandelbrot.ui.manager import UIManager
 from kit_mandelbrot.ui.theme import DEFAULT_THEME
-from kit_mandelbrot.ui.viewport_overlay import ViewportOverlay, ViewportOverlayConfig
 from kit_mandelbrot.ui.cmd_prompt_overlay import (
     CmdPromptOverlay,
     CmdPromptOverlayConfig,
 )
 
+from typing import cast
 
 START_RE_MIN = -2.5
 START_RE_MAX = 1.0
@@ -40,6 +38,9 @@ class MandelbrotWindow(pyglet.window.Window):
             width=width, height=height, caption="Mandelbrot Viewer", resizable=True
         )
 
+        self._smooth: bool = True
+        self._max_iter = 100
+
         # DEBUG push all window events
         self.push_handlers(pyglet.window.event.WindowEventLogger())
 
@@ -50,7 +51,11 @@ class MandelbrotWindow(pyglet.window.Window):
         fs = (files("kit_mandelbrot.shaders") / "present_color.frag.glsl").read_text(
             "utf-8"
         )
-        program = ctx.program(vertex_shader=vs, fragment_shader=fs)
+        self.program = ctx.program(vertex_shader=vs, fragment_shader=fs)
+
+        cast(moderngl.Uniform, self.program["use_smooth"]).value = int(self._smooth)
+
+        cast(moderngl.Uniform, self.program["max_iter"]).value = int(self._max_iter)
 
         presenter = TexturePresenter(ctx)
         presenter.ensure_size((self.width, self.height))  # allocate texture
@@ -59,8 +64,8 @@ class MandelbrotWindow(pyglet.window.Window):
         assert presenter.texture is not None
         engine: FractalEngine = FractalEngineGPU(ctx=ctx, presenter=presenter)
 
-        quad = FullscreenQuad(ctx, program)
-        pipeline = RenderPipeline(ctx, program, quad, presenter)
+        quad = FullscreenQuad(ctx, self.program)
+        pipeline = RenderPipeline(ctx, self.program, quad, presenter)
         cmd_engine = CommandEngine()
         vp = Viewport(
             re_min=START_RE_MIN,
@@ -85,6 +90,7 @@ class MandelbrotWindow(pyglet.window.Window):
             engine=engine,
             update_viewport=self.update_viewport,
             quit=pyglet.app.exit,
+            toggle_smooth=self._toggle_smooth,
         )
 
         self._recompute_and_upload(w=width, h=height)
@@ -97,6 +103,7 @@ class MandelbrotWindow(pyglet.window.Window):
         cmd_engine.mount(self.app)
         cmd_engine.register(VP_CMD)
         cmd_engine.register(Q_CMD)
+        cmd_engine.register(TOOGLE_SMOOTH_CMD)
 
         self.ui = UIManager(window=self, ctx=self.ui_context)
 
@@ -116,11 +123,18 @@ class MandelbrotWindow(pyglet.window.Window):
         self.app.engine.compute(width=w, height=h, viewport=self.ui_context.viewport)
 
     def on_draw(self) -> None:
+        cast(moderngl.Uniform, self.program["use_smooth"]).value = int(self._smooth)
         self.clear()
         self.app.gl_ctx.clear(0.07, 0.07, 0.09, 1.0)
         self.app.pipeline.draw()
 
         self.ui.draw()
+
+    def _toggle_smooth(self) -> bool:
+        self._smooth = not self._smooth
+        cast(moderngl.Uniform, self.program["use_smooth"]).value = int(self._smooth)
+
+        return self._smooth
 
     def on_resize(self, width: int, height: int) -> None:
         super().on_resize(width, height)

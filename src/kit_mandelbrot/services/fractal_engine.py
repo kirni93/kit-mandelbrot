@@ -47,7 +47,6 @@ class FractalEngineGPU:
 
         # Defaults
         self.max_iter = 100
-        self.smooth = True
 
     def compute(self, width: int, height: int, viewport: Viewport) -> None:
         self.presenter.ensure_size((width, height))
@@ -77,9 +76,6 @@ class FractalEngineGPU:
         )
 
         cast(moderngl.Uniform, self.program["max_iter"]).value = int(self.max_iter)
-        cast(moderngl.Uniform, self.program["smooth_stability"]).value = int(
-            self.smooth
-        )
 
         self.quad.draw()
         self.ctx.screen.use()

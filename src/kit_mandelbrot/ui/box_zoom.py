@@ -103,7 +103,7 @@ class Callout:
         if cx + callout_w > win_w - self.margin:
             cx = self.anchor_x - self.offset_x - callout_w
 
-        # flip vertically of out of bounds
+        # flip vertically if out of bounds
         if cy + callout_h > win_h - self.margin:
             cy = self.anchor_y - self.offset_y - callout_h
 

@@ -36,31 +36,20 @@ class MandelbrotWindow(pyglet.window.Window):
         self._smooth: bool = True
         self._max_iter = 100
 
-        # DEBUG push all window events
         self.push_handlers(pyglet.window.event.WindowEventLogger())
 
         ctx = moderngl.create_context()
         ctx.viewport = (0, 0, self.width, self.height)
 
-        vs = (files("kit_mandelbrot.shaders") / "present.vert.glsl").read_text("utf-8")
-        fs = (files("kit_mandelbrot.shaders") / "present_color.frag.glsl").read_text(
-            "utf-8"
-        )
-        self.program = ctx.program(vertex_shader=vs, fragment_shader=fs)
-
-        cast(moderngl.Uniform, self.program["use_smooth"]).value = int(self._smooth)
-
-        cast(moderngl.Uniform, self.program["max_iter"]).value = int(self._max_iter)
-
         presenter = TexturePresenter(ctx)
         presenter.ensure_size((self.width, self.height))  # allocate texture
 
-        # engine: FractalEngine = FractalEngineCPU()
         assert presenter.texture is not None
         engine: FractalEngine = FractalEngineGPU(ctx=ctx, presenter=presenter)
 
-        quad = FullscreenQuad(ctx, self.program)
-        pipeline = RenderPipeline(ctx, self.program, quad, presenter)
+        pipeline = RenderPipeline(
+            ctx, presenter=presenter, max_iter=self._max_iter, smooth=self._smooth
+        )
         cmd_engine = CommandEngine()
         vp = Viewport()
         self.ui_context = UIContext(
@@ -113,7 +102,6 @@ class MandelbrotWindow(pyglet.window.Window):
         self.app.engine.compute(width=w, height=h, viewport=self.ui_context.viewport)
 
     def on_draw(self) -> None:
-        cast(moderngl.Uniform, self.program["use_smooth"]).value = int(self._smooth)
         self.clear()
         self.app.gl_ctx.clear(0.07, 0.07, 0.09, 1.0)
         self.app.pipeline.draw()
@@ -122,7 +110,8 @@ class MandelbrotWindow(pyglet.window.Window):
 
     def _toggle_smooth(self) -> bool:
         self._smooth = not self._smooth
-        cast(moderngl.Uniform, self.program["use_smooth"]).value = int(self._smooth)
+
+        self.app.pipeline.set_smooth(self._smooth)
 
         return self._smooth
 

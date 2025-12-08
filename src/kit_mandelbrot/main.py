@@ -26,11 +26,6 @@ from kit_mandelbrot.ui.cmd_prompt_overlay import (
 
 from typing import cast
 
-START_RE_MIN = -2.5
-START_RE_MAX = 1.0
-START_IMAG_MIN = -1.5
-START_IMAG_MAX = 1.5
-
 
 class MandelbrotWindow(pyglet.window.Window):
     def __init__(self, width: int = 900, height: int = 600) -> None:
@@ -67,12 +62,7 @@ class MandelbrotWindow(pyglet.window.Window):
         quad = FullscreenQuad(ctx, self.program)
         pipeline = RenderPipeline(ctx, self.program, quad, presenter)
         cmd_engine = CommandEngine()
-        vp = Viewport(
-            re_min=START_RE_MIN,
-            re_max=START_RE_MAX,
-            imag_min=START_IMAG_MIN,
-            imag_max=START_IMAG_MAX,
-        )
+        vp = Viewport()
         self.ui_context = UIContext(
             get_size=self.get_size,
             viewport=vp,

@@ -2,10 +2,10 @@ from typing import NamedTuple
 
 
 class Viewport(NamedTuple):
-    re_min: float
-    re_max: float
-    imag_min: float
-    imag_max: float
+    re_min: float = -2.5
+    re_max: float = 1
+    imag_min: float = -1.5
+    imag_max: float = 1.5
 
 
 def viewport_from_points(c1: complex, c2: complex) -> Viewport:

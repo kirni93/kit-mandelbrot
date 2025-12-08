@@ -99,7 +99,7 @@ class Callout:
         cx = self.anchor_x + self.offset_x
         cy = self.anchor_y + self.offset_y
 
-        # flip horizontally of outside of window
+        # flip horizontally if outside of window
         if cx + callout_w > win_w - self.margin:
             cx = self.anchor_x - self.offset_x - callout_w
 

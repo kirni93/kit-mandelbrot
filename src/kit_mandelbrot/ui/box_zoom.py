@@ -153,7 +153,7 @@ class BoxZoomConfig(BaseModel):
     @classmethod
     def check_opacity(cls, v: int) -> int:
         if not 0 <= v <= 255:
-            raise ValueError("opacity must be between 0 und 255")
+            raise ValueError("opacity must be between 0 and 255")
         return v
 
 

@@ -132,15 +132,16 @@ class MandelbrotWindow(pyglet.window.Window):
 def main():
     app = MandelbrotWindow()
 
-    cursor_cords_config = CursorCoordsOverlayConfig()
-    cursor_cords = CursorCoordsOverlay(cursor_cords_config)
+    # cursor_cords_config = CursorCoordsOverlayConfig()
+    # cursor_cords = CursorCoordsOverlay(cursor_cords_config)
 
-    app.ui.add(cursor_cords)
+    # app.ui.add(cursor_cords)
 
-    viewport_overlay_config = ViewportOverlayConfig()
-    viewport_overlay = ViewportOverlay(viewport_overlay_config)
+    # viewport_overlay_config = ViewportOverlayConfig()
+    # viewport_overlay = ViewportOverlay(viewport_overlay_config)
 
-    app.ui.add(viewport_overlay)
+    # disable until i bother to make it look good
+    # app.ui.add(viewport_overlay)
 
     cmd_prompt_config = CmdPromptOverlayConfig()
     cmd_prompt_overlay = CmdPromptOverlay(cmd_prompt_config)
